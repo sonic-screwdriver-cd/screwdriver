@@ -3,7 +3,15 @@
 
 > API for the Screwdriver CD service
 
-## Usage
+Screwdriver is a self-contained, pluggable service to help you build, test, and continuously deliver software using the latest containerization technologies.
+
+## To start using Screwdriver
+
+For more information about Screwdriver, check out our [documentation](http://docs.screwdriver.cd).
+
+## To start contributing to Screwdriver
+
+Have a look at our guidelines, as well as pointers on where to start making changes, in our [contributing guide](http://docs.screwdriver.cd/about/contributing).
 
 ### Prerequisites
 
@@ -34,6 +42,7 @@ This handy feature will bring up an entire Screwdriver instance (ui, api, and lo
 All data written to a database will be stored in `data` directory.
 
 Requires:
+ - Python 2.7
  - Mac OSX 10.10+
  - [Docker for Mac][docker]
  - [Docker Compose 1.8.1+][docker-compose]
@@ -62,9 +71,17 @@ executor:
                 token: this-is-a-real-token
             launchVersion: stable
 
-login:
-    oauthClientId: totally-real-client-id
-    oauthClientSecret: another-real-client-secret
+scms:
+    - plugin: github
+      config:
+          displayName: github
+          oauthClientId: totally-real-client-id
+          oauthClientSecret: another-real-client-secret
+          username: sd-buildbot
+          email: dev-null@screwdriver.cd
+          gheHost: github.com
+          secret: this-is-a-secret
+          privateRepo: false
 ```
 
 ### Environment

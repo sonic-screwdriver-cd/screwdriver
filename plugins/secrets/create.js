@@ -25,10 +25,11 @@ module.exports = () => ({
             const pipelineFactory = request.server.app.pipelineFactory;
             const secretFactory = request.server.app.secretFactory;
             const username = request.auth.credentials.username;
+            const scmContext = request.auth.credentials.scmContext;
 
             return Promise.all([
                 pipelineFactory.get(request.payload.pipelineId),
-                userFactory.get({ username })
+                userFactory.get({ username, scmContext })
             ]).then(([pipeline, user]) => {
                 if (!pipeline) {
                     throw boom.notFound(`Pipeline ${request.payload.pipelineId} does not exist`);
@@ -73,7 +74,7 @@ module.exports = () => ({
                     });
             })
             // something broke, respond with error
-            .catch(err => reply(boom.wrap(err)));
+                .catch(err => reply(boom.wrap(err)));
         },
         validate: {
             payload: schema.models.secret.create

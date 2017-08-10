@@ -21,11 +21,12 @@ module.exports = () => ({
             const pipelineFactory = request.server.app.pipelineFactory;
             const userFactory = request.server.app.userFactory;
             const username = request.auth.credentials.username;
+            const scmContext = request.auth.credentials.scmContext;
 
             // Fetch the pipeline and user models
             return Promise.all([
                 pipelineFactory.get(id),
-                userFactory.get({ username })
+                userFactory.get({ username, scmContext })
             ]).then(([pipeline, user]) => {
                 if (!pipeline) {
                     throw boom.notFound('Pipeline does not exist');
@@ -47,7 +48,7 @@ module.exports = () => ({
                     .then(() => pipeline.addWebhook(`${request.server.info.uri}/v4/webhooks`))
                     .then(() => reply().code(204));
             })
-            .catch(err => reply(boom.wrap(err)));
+                .catch(err => reply(boom.wrap(err)));
         },
         validate: {
             params: {
