@@ -117,13 +117,18 @@ describe('Register Unit Test Case', () => {
                 },
                 slack: {
                     baz: 'def'
+                },
+                sms: {
+                    fiz: 'xyz',
+                    module: '@module/sms'
                 }
             }
         };
 
         const notificationPlugins = [
             'screwdriver-notifications-email',
-            'screwdriver-notifications-slack'
+            'screwdriver-notifications-slack',
+            '@module/sms'
         ];
 
         notificationPlugins.forEach((plugin) => {
@@ -135,7 +140,7 @@ describe('Register Unit Test Case', () => {
 
         return main(serverMock, newConfig).then(() => {
             notificationPlugins.forEach(() =>
-                Assert.calledTwice(serverMock.on)
+                Assert.calledThrice(serverMock.on)
             );
         });
     });
