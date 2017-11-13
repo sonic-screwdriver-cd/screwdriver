@@ -175,6 +175,50 @@ describe('Register Unit Test Case', () => {
         });
     });
 
+    it('should not use config with scope for notification constructor', () => {
+        serverMock.register.callsArgAsync(2);
+
+        const newConfig = {
+            notifications: {
+                email: {
+                    foo: 'abc',
+                    scope: 'module'
+                },
+                slack: {
+                    baz: 'def'
+                }
+            }
+        };
+
+        const notificationPlugins = [
+            {
+                name: '@module/screwdriver-notifications-email',
+                args: [{
+                    foo: 'abc'
+                }]
+            },
+            {
+                name: 'screwdriver-notifications-slack',
+                args: [{
+                    baz: 'def'
+                }]
+            }
+        ];
+
+        notificationPlugins.forEach((plugin) => {
+            mocks[plugin.name] = sinon.stub();
+            mocks[plugin.name].prototype.events = ['build_status'];
+            mocks[plugin.name].prototype.notify = sinon.stub();
+            mockery.registerMock(plugin.name, mocks[plugin.name]);
+        });
+
+        return main(serverMock, newConfig).then(() => {
+            notificationPlugins.forEach((plugin) => {
+                Assert.deepEqual(mocks[plugin.name].firstCall.args, plugin.args);
+            });
+        });
+    });
+
     it('bubbles failures up', () => {
         serverMock.register.callsArgWithAsync(2, new Error('failure loading'));
 
