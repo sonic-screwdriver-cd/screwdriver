@@ -12,7 +12,7 @@ Feature: SD Command
             | namespace | command | version |
             | foo       | bar     | 1.0.0   |
 
-    Scenario Outline: Execute command in habitat
+    Scenario Outline: Execute a command of habitat format
         Given command specifications as mode: <mode>, package: <package>, binary: <binary>
         When the command package mode is <mode>
         And execute with arguments: <arguments>
@@ -23,36 +23,28 @@ Feature: SD Command
             | remote | core/git/2.14.1 | git    | -baz sample |
             | local  | ./foobar.hart   | git    | -baz sample |
 
-    Scenario: Execute command in docker
-        Given a command specification:
-            | image      | arguments   |
-            | node:1.2.3 | -baz sample |
-        When execute the command with arguments: <arguments>
+    Scenario: Execute a command of docker format
+        Given command specification as image: "node:1.2.3"
+        When execute the command with arguments: "-baz sample"
         Then the command finishes successfully
 
-    Scenario: Execute command in binary
-        Given a command specification:
-            | file        | arguments   |
-            | ./foobar.sh | -baz sample |
-        When execute the command with arguments: <arguments>
+    Scenario: Execute a command of binary format
+        Given command specification as file: "./foobar.sh"
+        When execute the command with arguments: "-baz sample"
         Then the command finishes successfully
 
-    Scenario: Command publish
-        Given a command specification file
+    Scenario: Pulish command
+        Given command specification file
         When execute publish
         Then the command to be successfully published
 
-    Scenario Outline: Command promote
-        Given promoting version is <promoting_version>
-        And removing version is <removing_version>
-        And promoting target is <tag>
+    Scenario: Promote command
+        Given promoting version is "1.0.1"
+        And promoting target is "latest"
+        And currently "1.0.0" is tagged to "latest"
         When execute promote
-        Then promote <promoting_version> to <tag>
-        And remove <removing_version> from <tag>
-
-        Examples:
-            | tag    | promoting_version | removing_version |
-            | latest | 1.0.1             | 1.0.0            |
+        Then promote "1.0.1" to "latest"
+        And remove "1.0.0" from "latest"
 
     Scenario: Get list of explicit command versions
         When execute list
