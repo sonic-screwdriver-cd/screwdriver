@@ -24,7 +24,7 @@ Feature: SD Command
             | local  | ./foobar.hart   | git    | -baz sample |
 
     Scenario: Execute a command of docker format
-        Given command specification as image: "node:1.2.3"
+        Given command specification as image: "node:6"
         When execute the command with arguments: "-baz sample"
         Then the command finishes successfully
 
@@ -33,12 +33,12 @@ Feature: SD Command
         When execute the command with arguments: "-baz sample"
         Then the command finishes successfully
 
-    Scenario: Pulish command
+    Scenario: Pulish a command
         Given command specification file
         When execute publish
         Then the command to be successfully published
 
-    Scenario: Promote command
+    Scenario: Promote a command
         Given promoting version is "1.0.1"
         And promoting target is "latest"
         And currently "1.0.0" is tagged to "latest"
