@@ -9,28 +9,28 @@ Feature: SD Command
 
     Background:
         Given an existing pipeline with a command:
-            | namespace | command | version |
-            | foo       | bar     | 1.0.0   |
+            | namespace   | command        | version |
+            | sd-cmd-test | sample-command | 1.0.0   |
 
     Scenario Outline: Execute a command of habitat format
         Given command specifications as mode: <mode>, package: <package>, binary: <binary>
         When the command package mode is <mode>
-        And execute with arguments: <arguments>
+        And execute the command with arguments: <arguments>
         Then the command finishes successfully
 
         Examples:
-            | mode   | package         | binary | arguments   |
-            | remote | core/git/2.14.1 | git    | -baz sample |
-            | local  | ./foobar.hart   | git    | -baz sample |
+            | mode   | package         | binary | arguments     |
+            | remote | core/git/2.14.1 | git    | git --version |
+            | local  | ./sample.hart   | git    | git --version |
 
     Scenario: Execute a command of docker format
         Given command specification as image: "node:6"
-        When execute the command with arguments: "-baz sample"
+        When execute the command with arguments: "node --version"
         Then the command finishes successfully
 
     Scenario: Execute a command of binary format
-        Given command specification as file: "./foobar.sh"
-        When execute the command with arguments: "-baz sample"
+        Given command specification as file: "./sample.sh"
+        When execute the command with arguments: "git --version"
         Then the command finishes successfully
 
     Scenario: Pulish a command
