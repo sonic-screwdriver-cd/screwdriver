@@ -33,7 +33,7 @@ Feature: SD Command
         When execute the command with arguments: "git --version"
         Then the command finishes successfully
 
-    Scenario: Pulish a command
+    Scenario: Publish a command
         Given command specification file
         When execute publish
         Then the command to be successfully published
