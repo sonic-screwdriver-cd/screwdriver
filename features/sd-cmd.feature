@@ -1,5 +1,5 @@
 @ignore
-Feature: SD Command
+Feature: Commands
 
     Users want to share binaries or scripts across multiple containers
     so that they can easily use some commands in all containers.
@@ -35,17 +35,17 @@ Feature: SD Command
 
     Scenario: Publish a command
         Given command specification file
-        When execute publish
+        When execute "publish"
         Then the command to be successfully published
 
     Scenario: Promote a command
         Given promoting version is "1.0.1"
         And promoting target is "latest"
         And currently "1.0.0" is tagged to "latest"
-        When execute promote
+        When execute "promote"
         Then promote "1.0.1" to "latest"
         And remove "1.0.0" from "latest"
 
     Scenario: Get list of explicit command versions
-        When execute list
+        When execute "list"
         Then get list of explicit versions matching that range with comma separated tags next to applicable tags
