@@ -8,9 +8,9 @@ Feature: Commands
     (via remote binary, docker image, or habitat package) during a build.
 
     Background:
-        Given an existing pipeline with a command:
-            | namespace   | command        | version |
-            | sd-cmd-test | sample-command | 1.0.0   |
+        Given an existing pipeline with <image> image and a command:
+            | image         | namespace   | command        | version |
+            | golang:latest | sd-cmd-test | sample-command | 1.0.0   |
 
     Scenario Outline: Execute a command of habitat format
         Given command specifications as mode: <mode>, package: <package>, binary: <binary>
@@ -19,18 +19,18 @@ Feature: Commands
         Then the command finishes successfully
 
         Examples:
-            | mode   | package         | binary | arguments     |
-            | remote | core/git/2.14.1 | git    | git --version |
-            | local  | ./sample.hart   | git    | git --version |
+            | mode   | package         | binary | arguments |
+            | remote | core/node/8.9.1 | node   | node -v   |
+            | local  | ./sample.hart   | node   | node -v   |
 
     Scenario: Execute a command of docker format
         Given command specification as image: "node:6"
-        When execute the command with arguments: "node --version"
+        When execute the command with arguments: "node -v"
         Then the command finishes successfully
 
     Scenario: Execute a command of binary format
         Given command specification as file: "./sample.sh"
-        When execute the command with arguments: "git --version"
+        When execute the command with arguments: "node -v"
         Then the command finishes successfully
 
     Scenario: Publish a command
