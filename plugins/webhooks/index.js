@@ -174,10 +174,8 @@ async function createPREvents(options, request) {
         };
 
         if (b === branch) {
-            eventConfig.type = 'pr';
             eventConfig.startFrom = '~pr';
             eventConfig = Object.assign({
-                prRef,
                 prNum,
                 // eslint-disable-next-line no-await-in-loop
                 prInfo: await eventFactory.scm.getPrInfo(scmConfig)

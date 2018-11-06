@@ -275,7 +275,9 @@ exports.register = (server, options, next) => {
 
         return eventFactory.get({ id: build.eventId }).then((event) => {
             const workflowGraph = event.workflowGraph;
-            const nextJobs = workflowParser.getNextJobs(workflowGraph, { trigger: currentJobName });
+            const nextJobs = event.pr.url ?
+                {} :
+                workflowParser.getNextJobs(workflowGraph, { trigger: currentJobName });
 
             // Create a join object like: {A:[B,C], D:[B,F]} where [B,C] join on A, [B,F] join on D, etc.
             const joinObj = nextJobs.reduce((obj, jobName) => {
