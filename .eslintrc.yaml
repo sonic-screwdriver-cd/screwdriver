@@ -1,1 +1,6 @@
 extends: screwdriver
+rules:
+    max-lines-per-function: "error"
+    complexity: "error"
+    max-params: "error"
+    max-statements: "error"
