@@ -365,7 +365,7 @@ describe('webhooks plugin test', () => {
                 workflowGraph,
                 sync: sinon.stub(),
                 getConfiguration: sinon.stub(),
-                jobs: Promise.resolve([mainJobMock, jobMock]),
+                getJobs: sinon.stub().resolves([mainJobMock, jobMock]),
                 branch: Promise.resolve('master'),
                 update: sinon.stub()
             };
@@ -495,8 +495,36 @@ describe('webhooks plugin test', () => {
                         startFrom: '~tag',
                         commitBranch: 'master',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles: undefined
+                        changedFiles: undefined,
+                        meta: {
+                            sd: {
+                                tag: {
+                                    name: 'v0.0.1'
+                                }
+                            }
+                        }
                     });
+                });
+            });
+
+            it('returns 204 and not create event when there is no job to trigger', () => {
+                const tagWorkflowMock = {
+                    nodes: [
+                        { name: '~commit' },
+                        { name: 'main' }
+                    ],
+                    edges: [
+                        { src: '~commit', dest: 'main' }
+                    ]
+                };
+
+                pipelineMock.workflowGraph = tagWorkflowMock;
+                pipelineMock.jobs = Promise.resolve([mainJobMock]);
+                pipelineFactoryMock.list.resolves([pipelineMock]);
+
+                return server.inject(options).then((reply) => {
+                    assert.equal(reply.statusCode, 204);
+                    assert.notCalled(eventFactoryMock.create);
                 });
             });
 
@@ -531,7 +559,14 @@ describe('webhooks plugin test', () => {
                         startFrom: '~tag:branch',
                         commitBranch: 'branch',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles: undefined
+                        changedFiles: undefined,
+                        meta: {
+                            sd: {
+                                tag: {
+                                    name: 'v0.0.1'
+                                }
+                            }
+                        }
                     });
                 });
             });
@@ -542,6 +577,9 @@ describe('webhooks plugin test', () => {
                 parsed.type = 'repo';
                 parsed.action = 'release';
                 parsed.ref = 'v0.0.1';
+                parsed.releaseId = 123456;
+                parsed.releaseName = 'release01';
+                parsed.releaseAuthor = 'testuser';
                 delete parsed.sha;
                 mainJobMock.requires = '~release';
                 reqHeaders['x-github-event'] = 'release';
@@ -597,8 +635,41 @@ describe('webhooks plugin test', () => {
                         startFrom: '~release',
                         commitBranch: 'master',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles: undefined
+                        changedFiles: undefined,
+                        meta: {
+                            sd: {
+                                release: {
+                                    id: 123456,
+                                    name: 'release01',
+                                    author: 'testuser'
+                                },
+                                tag: {
+                                    name: 'v0.0.1'
+                                }
+                            }
+                        }
                     });
+                });
+            });
+
+            it('returns 204 and not create event when there is no job to trigger', () => {
+                const releaseWorkflowMock = {
+                    nodes: [
+                        { name: '~commit' },
+                        { name: 'main' }
+                    ],
+                    edges: [
+                        { src: '~commit', dest: 'main' }
+                    ]
+                };
+
+                pipelineMock.workflowGraph = releaseWorkflowMock;
+                pipelineMock.jobs = Promise.resolve([mainJobMock]);
+                pipelineFactoryMock.list.resolves([pipelineMock]);
+
+                return server.inject(options).then((reply) => {
+                    assert.equal(reply.statusCode, 204);
+                    assert.notCalled(eventFactoryMock.create);
                 });
             });
 
@@ -633,7 +704,19 @@ describe('webhooks plugin test', () => {
                         startFrom: '~release:branch',
                         commitBranch: 'branch',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles: undefined
+                        changedFiles: undefined,
+                        meta: {
+                            sd: {
+                                release: {
+                                    id: 123456,
+                                    name: 'release01',
+                                    author: 'testuser'
+                                },
+                                tag: {
+                                    name: 'v0.0.1'
+                                }
+                            }
+                        }
                     });
                 });
             });
@@ -686,7 +769,8 @@ describe('webhooks plugin test', () => {
                         startFrom: '~commit',
                         commitBranch: 'master',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles
+                        changedFiles,
+                        meta: {}
                     });
                 })
             );
@@ -775,7 +859,8 @@ describe('webhooks plugin test', () => {
                         startFrom: '~commit:master',
                         commitBranch: 'master',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles
+                        changedFiles,
+                        meta: {}
                     });
                     assert.calledWith(eventFactoryMock.create, {
                         pipelineId: pMock2.id,
@@ -788,7 +873,8 @@ describe('webhooks plugin test', () => {
                         startFrom: '~commit:master',
                         commitBranch: 'master',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles
+                        changedFiles,
+                        meta: {}
                     });
                     assert.calledWith(eventFactoryMock.create, {
                         pipelineId,
@@ -801,7 +887,8 @@ describe('webhooks plugin test', () => {
                         startFrom: '~commit',
                         commitBranch: 'master',
                         causeMessage: `Merged by ${username}`,
-                        changedFiles
+                        changedFiles,
+                        meta: {}
                     });
                     assert.neverCalledWith(eventFactoryMock.create, sinon.match({
                         pipelineId,
@@ -843,7 +930,8 @@ describe('webhooks plugin test', () => {
                         commitBranch: 'master',
                         changedFiles,
                         causeMessage: `Merged by ${username}`,
-                        skipMessage: 'Skipping due to the commit message: [skip ci]'
+                        skipMessage: 'Skipping due to the commit message: [skip ci]',
+                        meta: {}
                     });
                     assert.equal(reply.statusCode, 201);
                 });
@@ -854,6 +942,31 @@ describe('webhooks plugin test', () => {
 
                 return server.inject(options).then((reply) => {
                     assert.equal(reply.statusCode, 204);
+                });
+            });
+
+            it('returns 201 when commits by ignoreCommitsBy, but is a skip ci', () => {
+                parsed.username = 'batman';
+                parsed.lastCommitMessage = 'foo[skip ci]bar';
+                pipelineFactoryMock.scm.parseHook.withArgs(reqHeaders, payload).resolves(parsed);
+
+                return server.inject(options).then((reply) => {
+                    assert.equal(reply.statusCode, 201);
+                    assert.calledWith(eventFactoryMock.create, {
+                        pipelineId,
+                        type: 'pipeline',
+                        webhooks: true,
+                        username: 'batman',
+                        scmContext,
+                        sha,
+                        configPipelineSha: latestSha,
+                        startFrom: '~commit',
+                        commitBranch: 'master',
+                        changedFiles,
+                        causeMessage: 'Merged by batman',
+                        skipMessage: 'Skipping due to the commit message: [skip ci]',
+                        meta: {}
+                    });
                 });
             });
 
@@ -1137,26 +1250,34 @@ describe('webhooks plugin test', () => {
                         assert.equal(reply.statusCode, 201);
                         assert.calledWith(eventFactoryMock.create, {
                             pipelineId: pMock1.id,
-                            type: 'pipeline',
+                            type: 'pr',
                             webhooks: true,
                             username,
                             scmContext,
                             sha,
                             configPipelineSha: latestSha,
                             startFrom: '~pr:master',
+                            prNum: 2,
+                            prRef,
+                            prTitle: 'Update the README with new information',
+                            prInfo,
                             causeMessage: `Opened by ${scmDisplayName}:${username}`,
                             chainPR: false,
                             changedFiles
                         });
                         assert.calledWith(eventFactoryMock.create, {
                             pipelineId: pMock2.id,
-                            type: 'pipeline',
+                            type: 'pr',
                             webhooks: true,
                             username,
                             scmContext,
                             sha,
                             configPipelineSha: latestSha,
                             startFrom: '~pr:master',
+                            prNum: 2,
+                            prRef,
+                            prTitle: 'Update the README with new information',
+                            prInfo,
                             causeMessage: `Opened by ${scmDisplayName}:${username}`,
                             chainPR: false,
                             changedFiles
@@ -1557,26 +1678,34 @@ describe('webhooks plugin test', () => {
                         assert.equal(reply.statusCode, 201);
                         assert.calledWith(eventFactoryMock.create, {
                             pipelineId: pMock1.id,
-                            type: 'pipeline',
+                            type: 'pr',
                             webhooks: true,
                             username,
                             scmContext,
                             sha,
                             configPipelineSha: latestSha,
                             startFrom: '~pr:master',
+                            prNum: 1,
+                            prRef,
+                            prTitle: 'Update the README with new information',
+                            prInfo,
                             causeMessage: `Synchronized by ${scmDisplayName}:${username}`,
                             chainPR: false,
                             changedFiles
                         });
                         assert.calledWith(eventFactoryMock.create, {
                             pipelineId: pMock2.id,
-                            type: 'pipeline',
+                            type: 'pr',
                             webhooks: true,
                             username,
                             scmContext,
                             sha,
                             configPipelineSha: latestSha,
                             startFrom: '~pr:master',
+                            prNum: 1,
+                            prRef,
+                            prTitle: 'Update the README with new information',
+                            prInfo,
                             causeMessage: `Synchronized by ${scmDisplayName}:${username}`,
                             chainPR: false,
                             changedFiles

@@ -4,13 +4,16 @@ const boom = require('boom');
 const joi = require('joi');
 const winston = require('winston');
 const workflowParser = require('screwdriver-workflow-parser');
+const schema = require('screwdriver-data-schema');
 
 const ANNOT_NS = 'screwdriver.cd';
 const ANNOT_CHAIN_PR = `${ANNOT_NS}/chainPR`;
 const ANNOT_RESTRICT_PR = `${ANNOT_NS}/restrictPR`;
-const CHECKOUT_URL_SCHEMA = require('screwdriver-data-schema').config.regex.CHECKOUT_URL;
+const EXTRA_TRIGGERS = schema.config.regex.EXTRA_TRIGGER;
+const CHECKOUT_URL_SCHEMA = schema.config.regex.CHECKOUT_URL;
 const CHECKOUT_URL_SCHEMA_REGEXP = new RegExp(CHECKOUT_URL_SCHEMA);
 const WAIT_FOR_CHANGEDFILES = 1.8;
+const DEFAULT_MAX_BYTES = 1048576;
 
 /**
  * Determine "startFrom" with type, action and branches
@@ -236,9 +239,9 @@ async function createPREvents(options, request) {
         const configPipelineSha = await pipelineFactory.scm.getCommitSha(scmConfig);
         /* eslint-enable no-await-in-loop */
 
-        let eventConfig = {
+        const eventConfig = {
             pipelineId: p.id,
-            type: 'pipeline',
+            type: 'pr',
             webhooks: true,
             username,
             scmContext: scmConfig.scmContext,
@@ -247,7 +250,12 @@ async function createPREvents(options, request) {
             startFrom: `~pr:${branch}`,
             changedFiles,
             causeMessage: `${action} by ${userDisplayName}`,
-            chainPR: resolvedChainPR
+            chainPR: resolvedChainPR,
+            prRef,
+            prNum,
+            prTitle,
+            // eslint-disable-next-line no-await-in-loop
+            prInfo: await eventFactory.scm.getPrInfo(scmConfig)
         };
 
         if (skipMessage) {
@@ -255,15 +263,7 @@ async function createPREvents(options, request) {
         }
 
         if (b === branch) {
-            eventConfig.type = 'pr';
             eventConfig.startFrom = '~pr';
-            eventConfig = Object.assign({
-                prRef,
-                prNum,
-                prTitle,
-                // eslint-disable-next-line no-await-in-loop
-                prInfo: await eventFactory.scm.getPrInfo(scmConfig)
-            }, eventConfig);
         }
 
         events.push(eventFactory.create(eventConfig));
@@ -325,7 +325,11 @@ async function pullRequestOpened(options, request, reply) {
 
             return reply().code(201);
         })
-        .catch(err => reply(boom.boomify(err)));
+        .catch((err) => {
+            winston.error(`[${hookId}]: ${err}`);
+
+            return reply(boom.boomify(err));
+        });
 }
 
 /**
@@ -361,14 +365,18 @@ async function pullRequestClosed(options, request, reply) {
     }
 
     return pipeline.sync()
-        .then(p => p.jobs)
+        .then(p => p.getJobs({ type: 'pr' }))
         .then((jobs) => {
             const prJobs = jobs.filter(j => j.name.includes(name));
 
             return Promise.all(prJobs.map(j => updatePRJobs(j)));
         })
         .then(() => reply().code(200))
-        .catch(err => reply(boom.boomify(err)));
+        .catch((err) => {
+            winston.error(`[${hookId}]: ${err}`);
+
+            return reply(boom.boomify(err));
+        });
 }
 
 /**
@@ -403,7 +411,7 @@ async function pullRequestSync(options, request, reply) {
 
         options.resolvedChainPR = resolveChainPR(chainPR, p);
 
-        await p.jobs.then(jobs => jobs.filter(j => j.name.includes(name)))
+        await p.getJobs({ type: 'pr' }).then(jobs => jobs.filter(j => j.name.includes(name)))
             .then(prJobs => Promise.all(prJobs.map(j => stopJob({ job: j, prNum, action }))));
 
         request.log(['webhook', hookId], `Job(s) for ${name} stopped`);
@@ -417,7 +425,11 @@ async function pullRequestSync(options, request, reply) {
 
             return reply().code(201);
         })
-        .catch(err => reply(boom.boomify(err)));
+        .catch((err) => {
+            winston.error(`[${hookId}]: ${err}`);
+
+            return reply(boom.boomify(err));
+        });
 }
 
 /**
@@ -528,7 +540,45 @@ function pullRequestEvent(pluginOptions, request, reply, parsed, token) {
                     return pullRequestClosed(options, request, reply);
                 }
             });
-    }).catch(err => reply(boom.boomify(err)));
+    }).catch((err) => {
+        winston.error(`[${hookId}]: ${err}`);
+
+        return reply(boom.boomify(err));
+    });
+}
+
+/**
+ * Create metadata by the parsed event
+ * @param   {Object}   parsed   It has information to create metadata
+ * @returns {Object}            Metadata
+ */
+function createMeta(parsed) {
+    const { action, ref, releaseId, releaseName, releaseAuthor } = parsed;
+
+    if (action === 'release') {
+        return {
+            sd: {
+                release: {
+                    id: releaseId,
+                    name: releaseName,
+                    author: releaseAuthor
+                },
+                tag: {
+                    name: ref
+                }
+            }
+        };
+    } else if (action === 'tag') {
+        return {
+            sd: {
+                tag: {
+                    name: ref
+                }
+            }
+        };
+    }
+
+    return {};
 }
 
 /**
@@ -546,44 +596,54 @@ async function createEvents(eventFactory, userFactory, pipelineFactory,
     pipelines, parsed, skipMessage) {
     const { action, branch, sha, username, scmContext, changedFiles, type } = parsed;
     const events = [];
+    const meta = createMeta(parsed);
 
     for (let i = 0; i < pipelines.length; i += 1) {
         const p = pipelines[i];
         /* eslint-disable no-await-in-loop */
         const pipelineBranch = await p.branch;
+        /* eslint-enable no-await-in-loop */
         const startFrom = determineStartFrom(action, type, branch, pipelineBranch);
-        const token = await p.token;
-        const scmConfig = {
-            scmUri: p.scmUri,
-            token,
-            scmContext
-        };
-        // obtain pipeline's latest commit sha for branch specific job
-        const configPipelineSha = await pipelineFactory.scm.getCommitSha(scmConfig);
-        /* eslint-enable no-await-in-loop */
-        const eventConfig = {
-            pipelineId: p.id,
-            type: 'pipeline',
-            webhooks: true,
-            username,
-            scmContext,
-            startFrom,
-            sha,
-            configPipelineSha,
-            changedFiles,
-            commitBranch: branch,
-            causeMessage: `Merged by ${username}`
-        };
 
-        if (skipMessage) {
-            eventConfig.skipMessage = skipMessage;
+        // empty event is not created when it is triggered by extra triggers (e.g. ~tag, ~release)
+        if (EXTRA_TRIGGERS.test(startFrom) && !hasTriggeredJob(p, startFrom)) {
+            winston.info(`Event not created: there are no jobs triggered by ${startFrom}`);
+        } else {
+            /* eslint-disable no-await-in-loop */
+            const token = await p.token;
+            const scmConfig = {
+                scmUri: p.scmUri,
+                token,
+                scmContext
+            };
+            // obtain pipeline's latest commit sha for branch specific job
+            const configPipelineSha = await pipelineFactory.scm.getCommitSha(scmConfig);
+            /* eslint-enable no-await-in-loop */
+            const eventConfig = {
+                pipelineId: p.id,
+                type: 'pipeline',
+                webhooks: true,
+                username,
+                scmContext,
+                startFrom,
+                sha,
+                configPipelineSha,
+                changedFiles,
+                commitBranch: branch,
+                causeMessage: `Merged by ${username}`,
+                meta
+            };
+
+            if (skipMessage) {
+                eventConfig.skipMessage = skipMessage;
+            }
+
+            /* eslint-disable no-await-in-loop */
+            await updateAdmins(userFactory, username, scmContext, p);
+            /* eslint-enable no-await-in-loop */
+
+            events.push(eventFactory.create(eventConfig));
         }
-
-        /* eslint-disable no-await-in-loop */
-        await updateAdmins(userFactory, username, scmContext, p);
-        /* eslint-enable no-await-in-loop */
-
-        events.push(eventFactory.create(eventConfig));
     }
 
     return Promise.all(events);
@@ -649,6 +709,8 @@ async function pushEvent(pluginOptions, request, reply, parsed, skipMessage, tok
 
         return reply().code(201);
     } catch (err) {
+        winston.error(`[${hookId}]: ${err}`);
+
         return reply(boom.boomify(err));
     }
 }
@@ -689,6 +751,7 @@ async function getCommitRefSha({ scm, token, ref, checkoutUrl, scmContext }) {
  * @param  {Array}      options.ignoreCommitsBy Ignore commits made by these usernames
  * @param  {Array}      options.restrictPR      Restrict PR setting
  * @param  {Boolean}    options.chainPR         Chain PR flag
+ * @param  {Integer}    options.maxBytes        Upper limit on incoming uploads to builds
  * @param  {Function}   next                    Function to call when done
  */
 exports.register = (server, options, next) => {
@@ -697,7 +760,8 @@ exports.register = (server, options, next) => {
         username: joi.string().required(),
         ignoreCommitsBy: joi.array().items(joi.string()).optional(),
         restrictPR: joi.string().valid('all', 'none', 'branch', 'fork').optional(),
-        chainPR: joi.boolean().optional()
+        chainPR: joi.boolean().optional(),
+        maxBytes: joi.number().integer().optional()
     }), 'Invalid config for plugin-webhooks');
 
     server.route({
@@ -707,11 +771,15 @@ exports.register = (server, options, next) => {
             description: 'Handle webhook events',
             notes: 'Acts on pull request, pushes, comments, etc.',
             tags: ['api', 'webhook'],
+            payload: {
+                maxBytes: parseInt(pluginOptions.maxBytes, 10) || DEFAULT_MAX_BYTES
+            },
             handler: async (request, reply) => {
                 const userFactory = request.server.app.userFactory;
                 const ignoreUser = pluginOptions.ignoreCommitsBy;
                 let message = 'Unable to process this kind of event';
                 let skipMessage;
+                let parsedHookId = '';
 
                 try {
                     const parsed = await scm.parseHook(request.headers, request.payload);
@@ -722,13 +790,17 @@ exports.register = (server, options, next) => {
 
                     const { type, hookId, username, scmContext, ref, checkoutUrl, action } = parsed;
 
+                    parsedHookId = hookId;
+
                     request.log(['webhook', hookId], `Received event type ${type}`);
 
                     // skipping checks
                     if (/\[(skip ci|ci skip)\]/.test(parsed.lastCommitMessage)) {
                         skipMessage = 'Skipping due to the commit message: [skip ci]';
                     }
-                    if (ignoreUser && ignoreUser.includes(username)) {
+
+                    // if skip ci then don't return
+                    if (ignoreUser && ignoreUser.includes(username) && !skipMessage) {
                         message = `Skipping because user ${username} is ignored`;
                         request.log(['webhook', hookId], message);
 
@@ -775,6 +847,8 @@ exports.register = (server, options, next) => {
 
                     return pushEvent(pluginOptions, request, reply, parsed, skipMessage, token);
                 } catch (err) {
+                    winston.error(`[${parsedHookId}]: ${err}`);
+
                     return reply(boom.boomify(err));
                 }
             }

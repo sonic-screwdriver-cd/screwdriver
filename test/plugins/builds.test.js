@@ -22,8 +22,11 @@ const decorateSecretObject = (secret) => {
 
 const decorateBuildObject = (build) => {
     const decorated = hoek.clone(build);
+    const updatedBuild = {
+        toJson: sinon.stub().returns(build)
+    };
 
-    decorated.update = sinon.stub();
+    decorated.update = sinon.stub().resolves(updatedBuild);
     decorated.start = sinon.stub();
     decorated.stop = sinon.stub();
     decorated.toJson = sinon.stub().returns(build);
@@ -232,6 +235,21 @@ describe('build plugin test', () => {
 
             return server.inject(`/builds/${id}`).then((reply) => {
                 assert.equal(reply.statusCode, 200);
+                assert.calledOnce(buildMock.update);
+                assert.deepEqual(reply.result, testBuild);
+            });
+        });
+
+        it('returns 200 for a build that exists - env is an array', () => {
+            const buildMock = getBuildMock(testBuild);
+
+            buildMock.environment = [];
+
+            buildFactoryMock.get.withArgs(id).resolves(buildMock);
+
+            return server.inject(`/builds/${id}`).then((reply) => {
+                assert.equal(reply.statusCode, 200);
+                assert.notCalled(buildMock.update);
                 assert.deepEqual(reply.result, testBuild);
             });
         });
@@ -311,6 +329,7 @@ describe('build plugin test', () => {
                         { src: '~commit', dest: 'main' }
                     ]
                 },
+                pr: {},
                 getBuilds: sinon.stub(),
                 update: sinon.stub(),
                 toJson: sinon.stub().returns({ id: 123 })
@@ -1026,6 +1045,26 @@ describe('build plugin test', () => {
             });
 
             describe('workflow', () => {
+                const publishJobMock = {
+                    id: publishJobId,
+                    pipelineId,
+                    state: 'ENABLED'
+                };
+                const src = `~sd@${pipelineId}:main`;
+
+                beforeEach(() => {
+                    eventMock.workflowGraph = {
+                        nodes: [
+                            { name: 'main' },
+                            { name: 'publish' }
+                        ],
+                        edges: [
+                            { src: 'main', dest: 'publish' }
+                        ]
+                    };
+                    buildMock.eventId = 'bbf22a3808c19dc50777258a253805b14fb3ad8b';
+                });
+
                 it('triggers next job in the pipeline workflow and external pipelines', () => {
                     const meta = {
                         darren: 'thebest'
@@ -1045,25 +1084,9 @@ describe('build plugin test', () => {
                             status
                         }
                     };
-                    const publishJobMock = {
-                        id: publishJobId,
-                        pipelineId,
-                        state: 'ENABLED'
-                    };
-                    const src = `~sd@${pipelineId}:main`;
 
-                    eventMock.workflowGraph = {
-                        nodes: [
-                            { name: 'main' },
-                            { name: 'publish' }
-                        ],
-                        edges: [
-                            { src: 'main', dest: 'publish' }
-                        ]
-                    };
                     jobFactoryMock.get.withArgs({ pipelineId, name: 'publish' })
                         .resolves(publishJobMock);
-                    buildMock.eventId = 'bbf22a3808c19dc50777258a253805b14fb3ad8b';
 
                     return server.inject(options).then((reply) => {
                         assert.equal(reply.statusCode, 200);
@@ -1077,6 +1100,7 @@ describe('build plugin test', () => {
                             scmContext,
                             eventId: 'bbf22a3808c19dc50777258a253805b14fb3ad8b',
                             configPipelineSha,
+                            prRef: '',
                             start: true
                         });
                         assert.calledWith(triggerFactoryMock.list, {
@@ -1108,6 +1132,55 @@ describe('build plugin test', () => {
                     });
                 });
 
+                it('triggers next job in the chainPR workflow', () => {
+                    const username = id;
+                    const status = 'SUCCESS';
+                    const options = {
+                        method: 'PUT',
+                        url: `/builds/${id}`,
+                        credentials: {
+                            username,
+                            scmContext,
+                            scope: ['build']
+                        },
+                        payload: {
+                            status
+                        }
+                    };
+
+                    eventMock.pr = { ref: 'pull/15/merge' };
+
+                    jobMock.name = 'PR-15:main';
+                    jobFactoryMock.get.withArgs({ pipelineId, name: 'PR-15:publish' })
+                        .resolves(publishJobMock);
+
+                    // flag should be true in chainPR events
+                    pipelineMock.chainPR = true;
+
+                    // Set no external pipeline
+                    triggerMocks = [
+                    ];
+                    triggerFactoryMock.list.resolves(triggerMocks);
+
+                    return server.inject(options).then((reply) => {
+                        assert.equal(reply.statusCode, 200);
+                        assert.isTrue(buildMock.update.calledBefore(buildFactoryMock.create));
+                        assert.calledWith(buildFactoryMock.create, {
+                            jobId: publishJobId,
+                            sha: testBuild.sha,
+                            parentBuildId: id,
+                            username,
+                            scmContext,
+                            eventId: 'bbf22a3808c19dc50777258a253805b14fb3ad8b',
+                            configPipelineSha,
+                            prRef: eventMock.pr.ref,
+                            start: true
+                        });
+                        // Events should not be created if there is no external pipeline
+                        assert.notCalled(eventFactoryMock.create);
+                    });
+                });
+
                 it('skips triggering if there is no nextJobs ', () => {
                     const status = 'SUCCESS';
                     const options = {
@@ -1122,13 +1195,23 @@ describe('build plugin test', () => {
                         }
                     };
 
+                    eventMock.workflowGraph = {
+                        nodes: [
+                            { name: '~commit' },
+                            { name: 'main' }
+                        ],
+                        edges: [
+                            { src: '~commit', dest: 'main' }
+                        ]
+                    };
+
                     return server.inject(options).then((reply) => {
                         assert.equal(reply.statusCode, 200);
                         assert.notCalled(buildFactoryMock.create);
                     });
                 });
 
-                it('skips triggering if the job is a PR', () => {
+                it('skips triggering if the job is a PR and chainPR is false', () => {
                     const status = 'SUCCESS';
                     const options = {
                         method: 'PUT',
@@ -1142,7 +1225,12 @@ describe('build plugin test', () => {
                         }
                     };
 
-                    jobMock.name = 'PR-15';
+                    jobMock.name = 'PR-15:main';
+                    jobFactoryMock.get.withArgs({ pipelineId, name: 'PR-15:publish' })
+                        .resolves(publishJobMock);
+
+                    // flag should be false in not-chainPR events
+                    pipelineMock.chainPR = false;
 
                     return server.inject(options).then((reply) => {
                         assert.equal(reply.statusCode, 200);
@@ -1168,21 +1256,9 @@ describe('build plugin test', () => {
                             status
                         }
                     };
-                    const publishJobMock = {
-                        id: publishJobId,
-                        pipelineId,
-                        state: 'DISABLED'
-                    };
 
-                    eventMock.workflowGraph = {
-                        nodes: [
-                            { name: 'main' },
-                            { name: 'publish' }
-                        ],
-                        edges: [
-                            { src: 'main', dest: 'publish' }
-                        ]
-                    };
+                    publishJobMock.state = 'DISABLED';
+
                     jobFactoryMock.get.withArgs({ pipelineId, name: 'publish' })
                         .resolves(publishJobMock);
 
@@ -1261,7 +1337,8 @@ describe('build plugin test', () => {
                         eventId: '8888',
                         username: 12345,
                         scmContext: 'github:github.com',
-                        configPipelineSha: 'abc123'
+                        configPipelineSha: 'abc123',
+                        prRef: ''
                     };
                     jobCconfig = Object.assign({}, jobBconfig, { jobId: 3 });
                 });
@@ -1987,7 +2064,6 @@ describe('build plugin test', () => {
                 assert.deepProperty(reply.result, 'name', 'test');
                 assert.deepProperty(reply.result, 'code', 0);
                 assert.deepProperty(reply.result, 'endTime', options.payload.endTime);
-                assert.notDeepProperty(reply.result, 'startTime');
             });
         });
 
@@ -2857,10 +2933,17 @@ describe('build plugin test', () => {
         const username = 'myself';
         let options;
         let buildMock;
-        const startTime = '2019-01-29T01:47:27.863Z';
-        const endTime = '2019-01-30T01:47:27.863Z';
+        let startTime = '2019-01-29T01:47:27.863Z';
+        let endTime = '2019-01-30T01:47:27.863Z';
+        const dateNow = 1552597858211;
+        const nowTime = (new Date(dateNow)).toISOString();
+        let sandbox;
 
         beforeEach(() => {
+            sandbox = sinon.createSandbox({
+                useFakeTimers: false
+            });
+            sandbox.useFakeTimers(dateNow);
             options = {
                 method: 'GET',
                 url: `/builds/${id}/metrics?startTime=${startTime}&endTime=${endTime}`,
@@ -2870,19 +2953,46 @@ describe('build plugin test', () => {
                 }
             };
             buildMock = getBuildMock(testBuild);
-            buildMock.getStepMetrics = sinon.stub().resolves([]);
+            buildMock.getMetrics = sinon.stub().resolves([]);
             buildFactoryMock.get.resolves(buildMock);
+        });
+
+        afterEach(() => {
+            sandbox.restore();
         });
 
         it('returns 200 and metrics for build', () =>
             server.inject(options).then((reply) => {
                 assert.equal(reply.statusCode, 200);
-                assert.calledWith(buildMock.getStepMetrics, {
+                assert.calledWith(buildMock.getMetrics, {
                     startTime,
                     endTime
                 });
             })
         );
+
+        it('returns 400 if time range is too big', () => {
+            startTime = '2018-01-29T01:47:27.863Z';
+            endTime = '2019-01-29T01:47:27.863Z';
+            options.url = `/builds/${id}/metrics?startTime=${startTime}&endTime=${endTime}`;
+
+            return server.inject(options).then((reply) => {
+                assert.notCalled(buildMock.getMetrics);
+                assert.equal(reply.statusCode, 400);
+            });
+        });
+
+        it('defaults time range if missing', () => {
+            options.url = `/builds/${id}/metrics`;
+
+            return server.inject(options).then((reply) => {
+                assert.calledWith(buildMock.getMetrics, {
+                    endTime: nowTime,
+                    startTime: '2018-09-15T21:10:58.211Z' // 6 months
+                });
+                assert.equal(reply.statusCode, 200);
+            });
+        });
 
         it('returns 404 when build does not exist', () => {
             const error = {

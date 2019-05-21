@@ -6,6 +6,29 @@ const schema = require('screwdriver-data-schema');
 const idSchema = joi.reach(schema.models.pipeline.base, 'id');
 const helper = require('./helper');
 
+/**
+ * Get user permissions on old pipeline
+ * @method getPermissionsForOldPipeline
+ * @param  {Array}                     scmContexts  An array of scmContext
+ * @param  {Object}                    pipeline     Pipeline to check against
+ * @param  {Object}                    user         User to check for
+ * @return {Promise}
+ */
+function getPermissionsForOldPipeline({ scmContexts, pipeline, user }) {
+    // this pipeline's scmContext has been removed, allow current admin to change it
+    if (!scmContexts.includes(pipeline.scmContext)) {
+        const permission = { admin: false };
+
+        if (pipeline.admins[user.username]) {
+            permission.admin = true;
+        }
+
+        return Promise.resolve(permission);
+    }
+
+    return user.getPermissions(pipeline.scmUri);
+}
+
 module.exports = () => ({
     method: 'PUT',
     path: '/pipelines/{id}',
@@ -24,11 +47,13 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const checkoutUrl = helper.formatCheckoutUrl(request.payload.checkoutUrl);
+            const rootDir = helper.sanitizeRootDir(request.payload.rootDir);
             const id = request.params.id;
             const pipelineFactory = request.server.app.pipelineFactory;
             const userFactory = request.server.app.userFactory;
             const username = request.auth.credentials.username;
             const scmContext = request.auth.credentials.scmContext;
+            const scmContexts = pipelineFactory.scm.getScmContexts();
             const isValidToken = request.server.plugins.pipelines.isValidToken;
             let gitToken;
 
@@ -62,12 +87,17 @@ module.exports = () => ({
                             return pipelineFactory.scm.parseUrl({
                                 scmContext,
                                 checkoutUrl,
+                                rootDir,
                                 token
                             });
                         })
                         // get the user permissions for the repo
                         .then(scmUri => Promise.all([
-                            user.getPermissions(oldPipeline.scmUri),
+                            getPermissionsForOldPipeline({
+                                scmContexts,
+                                pipeline: oldPipeline,
+                                user
+                            }),
                             user.getPermissions(scmUri)
                         ])
                             // if the user isn't an admin for both repos, reject

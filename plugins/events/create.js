@@ -4,41 +4,6 @@ const boom = require('boom');
 const urlLib = require('url');
 const validationSchema = require('screwdriver-data-schema');
 
-/**
- * Update admins array
- * @param  {Object}    permissions  User permissions
- * @param  {Pipeline}  pipeline     Pipeline object to update
- * @param  {String}    username     Username of user
- * @return {Promise}                Updates the pipeline admins and throws an error if not an admin
- */
-function updateAdmins({ permissions, pipeline, username }) {
-    const newAdmins = pipeline.admins;
-
-    // Delete user from admin list if bad permissions
-    if (!permissions.push) {
-        delete newAdmins[username];
-        // This is needed to make admins dirty and update db
-        pipeline.admins = newAdmins;
-
-        return pipeline.update()
-            .then(() => {
-                throw boom.forbidden(`User ${username} `
-                + 'does not have push permission for this repo');
-            });
-    }
-
-    // Add user as admin if permissions good and does not already exist
-    if (!pipeline.admins[username]) {
-        newAdmins[username] = true;
-        // This is needed to make admins dirty and update db
-        pipeline.admins = newAdmins;
-
-        return pipeline.update();
-    }
-
-    return Promise.resolve();
-}
-
 module.exports = () => ({
     method: 'POST',
     path: '/events',
@@ -66,6 +31,9 @@ module.exports = () => ({
             const username = request.auth.credentials.username;
             const isValidToken = request.server.plugins.pipelines.isValidToken;
             const meta = request.payload.meta;
+            const causeMessage = request.payload.causeMessage;
+            const creator = request.payload.creator;
+            const updateAdmins = request.server.plugins.events.updateAdmins;
 
             return Promise.resolve().then(() => {
                 const buildId = request.payload.buildId;
@@ -109,6 +77,14 @@ module.exports = () => ({
 
                 if (meta) {
                     payload.meta = meta;
+                }
+
+                if (causeMessage) {
+                    payload.causeMessage = causeMessage;
+                }
+
+                if (creator) {
+                    payload.creator = creator;
                 }
 
                 // Trigger "~pr" needs to have PR number given
@@ -182,6 +158,7 @@ module.exports = () => ({
 
                                         payload.prInfo = prInfo;
                                         payload.prRef = prInfo.ref;
+                                        payload.chainPR = pipeline.chainPR;
 
                                         // PR author should be able to rerun their own PR build
                                         if (prInfo.username === username) {
