@@ -1,6 +1,6 @@
 extends: screwdriver
 rules:
-    max-lines-per-function: "error"
-    complexity: "error"
-    max-params: "error"
-    max-statements: "error"
+    max-lines-per-function: "warn"
+    complexity: "warn"
+    max-params: "warn"
+    max-statements: "warn"
