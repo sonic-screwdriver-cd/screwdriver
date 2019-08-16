@@ -123,7 +123,7 @@
     "coveralls": "^2.11.12",
     "cucumber": "2.3.1",
     "eslint": "^5.16.0",
-    "eslint-config-screwdriver": "^3.0.1",
+    "eslint-config-screwdriver": "^4.0.0",
     "form-data": "^2.3.3",
     "jenkins-mocha": "^7.0.0",
     "mockery": "^2.0.0",
