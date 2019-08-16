@@ -23,9 +23,9 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const { jobFactory, pipelineFactory, userFactory } = request.server.app;
-            const id = request.params.id;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { id } = request.params;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             return jobFactory.get(id)
                 .then((job) => {

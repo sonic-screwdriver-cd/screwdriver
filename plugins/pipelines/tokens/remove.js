@@ -23,11 +23,11 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const tokenFactory = request.server.app.tokenFactory;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const userFactory = request.server.app.userFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { tokenFactory } = request.server.app;
+            const { pipelineFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             return Promise.all([
                 pipelineFactory.get(request.params.pipelineId),
@@ -60,8 +60,7 @@ module.exports = () => ({
                                 }
 
                                 return token.remove();
-                            })
-                        );
+                            }));
                 })
                 .then(() => reply().code(204))
                 .catch(err => reply(boom.boomify(err)));

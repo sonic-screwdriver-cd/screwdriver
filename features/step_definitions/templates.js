@@ -1,10 +1,10 @@
 'use strict';
 
 const fs = require('mz/fs');
-const request = require('../support/request');
 const path = require('path');
 const Assert = require('chai').assert;
 const { defineSupportCode } = require('cucumber');
+const request = require('../support/request');
 
 defineSupportCode(({ Given, When, Then }) => {
     Given(/^a (valid|invalid)\b job-level template$/, function step(templateType) {

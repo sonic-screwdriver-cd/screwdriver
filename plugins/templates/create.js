@@ -28,16 +28,17 @@ module.exports = () => ({
                 if (config.errors.length > 0) {
                     throw boom.badRequest(
                         `Template has invalid format: ${config.errors.length} error(s).`,
-                        config.errors);
+                        config.errors
+                    );
                 }
 
-                const pipelineFactory = request.server.app.pipelineFactory;
-                const templateFactory = request.server.app.templateFactory;
-                const pipelineId = request.auth.credentials.pipelineId;
-                const isPR = request.auth.credentials.isPR;
+                const { pipelineFactory } = request.server.app;
+                const { templateFactory } = request.server.app;
+                const { pipelineId } = request.auth.credentials;
+                const { isPR } = request.auth.credentials;
                 // Search using namespace if it is passed in
-                const listOptions = config.template.namespace ?
-                    {
+                const listOptions = config.template.namespace
+                    ? {
                         params: {
                             name: config.template.name,
                             namespace: config.template.namespace

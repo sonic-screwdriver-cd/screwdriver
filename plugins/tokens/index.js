@@ -26,9 +26,9 @@ exports.register = (server, options, next) => {
      * @return {Boolean}
      */
     server.expose('canAccess', (credentials, token) => {
-        const userFactory = server.root.app.userFactory;
-        const username = credentials.username;
-        const scmContext = credentials.scmContext;
+        const { userFactory } = server.root.app;
+        const { username } = credentials;
+        const { scmContext } = credentials;
 
         return userFactory.get({ username, scmContext }).then((user) => {
             if (!user) {

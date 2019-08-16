@@ -80,7 +80,7 @@ function addOAuthRoutes(server, config) {
 
                 const factory = request.server.app.userFactory;
                 const accessToken = request.auth.credentials.token;
-                const username = request.auth.credentials.profile.username;
+                const { username } = request.auth.credentials.profile;
                 const profile = request.server.plugins.auth
                     .generateProfile(username, scmContext, ['user'], {});
                 const scmDisplayName = factory.scm.getDisplayName({ scmContext });

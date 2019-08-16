@@ -1,5 +1,6 @@
 'use strict';
 
+const workflowParser = require('screwdriver-workflow-parser');
 const getRoute = require('./get');
 const updateRoute = require('./update');
 const createRoute = require('./create');
@@ -10,7 +11,6 @@ const stepLogsRoute = require('./steps/logs');
 const listSecretsRoute = require('./listSecrets');
 const tokenRoute = require('./token');
 const metricsRoute = require('./metrics');
-const workflowParser = require('screwdriver-workflow-parser');
 
 /**
  * Create the build. If config.start is false or not passed in then do not start the job
@@ -27,8 +27,10 @@ const workflowParser = require('screwdriver-workflow-parser');
  * @param  {Boolean}  [config.start]        Whether to start the build or not
  * @return {Promise}
  */
-async function createBuild({ jobFactory, buildFactory, eventFactory, pipelineId,
-    jobName, username, scmContext, build, start }) {
+async function createBuild({
+    jobFactory, buildFactory, eventFactory, pipelineId,
+    jobName, username, scmContext, build, start
+}) {
     const event = await eventFactory.get(build.eventId);
     const job = await jobFactory.get({
         name: jobName,
@@ -110,7 +112,9 @@ function successBuildsInJoinList(joinList, finishedBuilds) {
  * @param  {String}   config.jobName            jobname for this build
  * @return {Promise}  the newly updated/created build
  */
-function handleNextBuild({ buildConfig, joinList, finishedBuilds, jobId }) {
+function handleNextBuild({
+    buildConfig, joinList, finishedBuilds, jobId
+}) {
     return Promise.resolve().then(() => {
         const noFailedBuilds = noFailureSoFar(joinList, finishedBuilds);
         const nextBuild = finishedBuilds.filter(b => b.jobId === jobId)[0];
@@ -240,10 +244,12 @@ exports.register = (server, options, next) => {
      * @return {Promise}                     Resolves to the newly created event
      */
     server.expose('triggerEvent', (config) => {
-        const { pipelineId, startFrom, causeMessage, parentBuildId } = config;
-        const eventFactory = server.root.app.eventFactory;
-        const pipelineFactory = server.root.app.pipelineFactory;
-        const scm = eventFactory.scm;
+        const {
+            pipelineId, startFrom, causeMessage, parentBuildId
+        } = config;
+        const { eventFactory } = server.root.app;
+        const { pipelineFactory } = server.root.app;
+        const { scm } = eventFactory;
 
         const payload = {
             pipelineId,
@@ -256,8 +262,8 @@ exports.register = (server, options, next) => {
         return pipelineFactory.get(pipelineId)
             .then(pipeline => pipeline.admin
                 .then((realAdmin) => {
-                    const scmUri = pipeline.scmUri;
-                    const scmContext = pipeline.scmContext;
+                    const { scmUri } = pipeline;
+                    const { scmContext } = pipeline;
 
                     payload.scmContext = scmContext;
                     payload.username = realAdmin.username;
@@ -294,15 +300,17 @@ exports.register = (server, options, next) => {
      * @return {Promise}                        Resolves to the newly created build or null
      */
     server.expose('triggerNextJobs', (config) => {
-        const { pipeline, job, build, username, scmContext } = config;
-        const eventFactory = server.root.app.eventFactory;
-        const jobFactory = server.root.app.jobFactory;
-        const buildFactory = server.root.app.buildFactory;
+        const {
+            pipeline, job, build, username, scmContext
+        } = config;
+        const { eventFactory } = server.root.app;
+        const { jobFactory } = server.root.app;
+        const { buildFactory } = server.root.app;
         const currentJobName = job.name;
         const pipelineId = pipeline.id;
 
         return eventFactory.get({ id: build.eventId }).then((event) => {
-            const workflowGraph = event.workflowGraph;
+            const { workflowGraph } = event;
             const nextJobs = workflowParser.getNextJobs(workflowGraph,
                 { trigger: currentJobName, chainPR: pipeline.chainPR });
 
@@ -348,8 +356,7 @@ exports.register = (server, options, next) => {
                                 builds: parentBuilds,
                                 startFrom: event.startFrom,
                                 parentEvent
-                            }))
-                        )
+                            })))
                         .then(upstreamBuilds => event.getBuilds()
                             .then(builds => builds.concat(upstreamBuilds)));
                 }).then(finishedBuilds => handleNextBuild({

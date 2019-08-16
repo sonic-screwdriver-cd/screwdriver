@@ -25,14 +25,14 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const eventFactory = request.server.app.eventFactory;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const userFactory = request.server.app.userFactory;
-            const scmContext = request.auth.credentials.scmContext;
-            const username = request.auth.credentials.username;
-            const isValidToken = request.server.plugins.pipelines.isValidToken;
+            const { eventFactory } = request.server.app;
+            const { pipelineFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { scmContext } = request.auth.credentials;
+            const { username } = request.auth.credentials;
+            const { isValidToken } = request.server.plugins.pipelines;
             const eventId = request.params.id;
-            const updateAdmins = request.server.plugins.events.updateAdmins;
+            const { updateAdmins } = request.server.plugins.events;
 
             return eventFactory.get(eventId)
                 .then((event) => {
@@ -48,7 +48,8 @@ module.exports = () => ({
                         // In pipeline scope, check if the token is allowed to the pipeline
                         if (!isValidToken(pipeline.id, request.auth.credentials)) {
                             throw boom.unauthorized(
-                                'Token does not have permission to this pipeline');
+                                'Token does not have permission to this pipeline'
+                            );
                         }
 
                         let permissions;

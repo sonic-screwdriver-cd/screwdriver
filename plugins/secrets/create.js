@@ -21,11 +21,11 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const userFactory = request.server.app.userFactory;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const secretFactory = request.server.app.secretFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { userFactory } = request.server.app;
+            const { pipelineFactory } = request.server.app;
+            const { secretFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             return Promise.all([
                 pipelineFactory.get(request.payload.pipelineId),
@@ -43,7 +43,8 @@ module.exports = () => ({
                     .then((permissions) => {
                         if (!permissions.admin) {
                             throw boom.forbidden(
-                                `User ${username} is not an admin of this repo`);
+                                `User ${username} is not an admin of this repo`
+                            );
                         }
                     })
                     // check if secret already exists

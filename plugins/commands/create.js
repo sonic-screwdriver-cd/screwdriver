@@ -126,7 +126,7 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const data = request.payload;
-            const isPR = request.auth.credentials.isPR;
+            const { isPR } = request.auth.credentials;
             let commandSpec;
             let commandBin;
             let multipartCheckResult = { valid: false };
@@ -150,12 +150,13 @@ module.exports = () => ({
                     if (config.errors.length > 0) {
                         throw boom.badRequest(
                             `Command has invalid format: ${config.errors.length} error(s).`,
-                            config.errors);
+                            config.errors
+                        );
                     }
 
-                    const commandFactory = request.server.app.commandFactory;
-                    const pipelineFactory = request.server.app.pipelineFactory;
-                    const pipelineId = request.auth.credentials.pipelineId;
+                    const { commandFactory } = request.server.app;
+                    const { pipelineFactory } = request.server.app;
+                    const { pipelineId } = request.auth.credentials;
 
                     return Promise.all([
                         pipelineFactory.get(pipelineId),
@@ -172,8 +173,8 @@ module.exports = () => ({
 
                         // If command name exists, but this build's pipelineId is not the same as command's pipelineId
                         // Then this build does not have permission to publish
-                        if (isPR ||
-                                (commands.length !== 0 && pipeline.id !== commands[0].pipelineId)) {
+                        if (isPR
+                                || (commands.length !== 0 && pipeline.id !== commands[0].pipelineId)) {
                             throw boom.forbidden('Not allowed to publish this command');
                         }
 

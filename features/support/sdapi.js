@@ -34,10 +34,10 @@ function promiseToWait(timeToWait) {
  *                                              empty array is returned
  */
 function findBuilds(config) {
-    const instance = config.instance;
-    const pipelineId = config.pipelineId;
-    const pullRequestNumber = config.pullRequestNumber;
-    const jobName = config.jobName;
+    const { instance } = config;
+    const { pipelineId } = config;
+    const { pullRequestNumber } = config;
+    const { jobName } = config;
 
     return request({
         json: true,
@@ -89,8 +89,8 @@ function findBuilds(config) {
  *                                      empty array is returned
  */
 function findEventBuilds(config) {
-    const instance = config.instance;
-    const eventId = config.eventId;
+    const { instance } = config;
+    const { eventId } = config;
 
     return request({
         json: true,
@@ -130,12 +130,12 @@ function findEventBuilds(config) {
  * @return {Promise}                            A build that fulfills the given criteria
  */
 function searchForBuild(config) {
-    const instance = config.instance;
-    const pipelineId = config.pipelineId;
-    const pullRequestNumber = config.pullRequestNumber;
-    const desiredSha = config.desiredSha;
-    const desiredStatus = config.desiredStatus;
-    const jwt = config.jwt;
+    const { instance } = config;
+    const { pipelineId } = config;
+    const { pullRequestNumber } = config;
+    const { desiredSha } = config;
+    const { desiredStatus } = config;
+    const { jwt } = config;
     const jobName = config.jobName || 'main';
 
     return findBuilds({
@@ -176,9 +176,9 @@ function searchForBuild(config) {
  * @return {Object}                       Build data
  */
 function waitForBuildStatus(config) {
-    const buildId = config.buildId;
-    const desiredStatus = config.desiredStatus;
-    const instance = config.instance;
+    const { buildId } = config;
+    const { desiredStatus } = config;
+    const { instance } = config;
 
     return request({
         json: true,
@@ -210,9 +210,9 @@ function waitForBuildStatus(config) {
  */
 function cleanupToken(config) {
     const tokenName = config.token;
-    const instance = config.instance;
-    const namespace = config.namespace;
-    const jwt = config.jwt;
+    const { instance } = config;
+    const { namespace } = config;
+    const { jwt } = config;
 
     return request({
         uri: `${instance}/${namespace}/tokens`,

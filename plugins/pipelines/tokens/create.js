@@ -21,11 +21,11 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const tokenFactory = request.server.app.tokenFactory;
-            const userFactory = request.server.app.userFactory;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { tokenFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { pipelineFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
             const pipelineId = request.params.id;
 
             return Promise.all([
@@ -51,8 +51,8 @@ module.exports = () => ({
                         return Promise.resolve();
                     }),
                     pipeline.tokens.then((tokens) => {
-                        const match = tokens &&
-                            tokens.find(t => t.name === request.payload.name);
+                        const match = tokens
+                            && tokens.find(t => t.name === request.payload.name);
 
                         if (match) {
                             throw boom.conflict(`Token ${match.name} already exists`);

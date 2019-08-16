@@ -23,13 +23,13 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const userFactory = request.server.app.userFactory;
-            const tokenFactory = request.server.app.tokenFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
-            const pipelineId = request.params.pipelineId;
-            const tokenId = request.params.tokenId;
+            const { pipelineFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { tokenFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
+            const { pipelineId } = request.params;
+            const { tokenId } = request.params;
 
             return Promise.all([
                 pipelineFactory.get(pipelineId),

@@ -23,9 +23,9 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const { bannerFactory } = request.server.app;
-            const id = request.params.id; // id of banner to update
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { id } = request.params; // id of banner to update
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             // lookup whether user is admin
             const adminDetails = request.server.plugins.banners
@@ -49,9 +49,7 @@ module.exports = () => ({
                     Object.assign(banner, request.payload);
 
                     return banner.update()
-                        .then(updatedBanner =>
-                            reply(updatedBanner.toJson()).code(200)
-                        );
+                        .then(updatedBanner => reply(updatedBanner.toJson()).code(200));
                 })
                 .catch(err => reply(boom.boomify(err)));
         },

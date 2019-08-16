@@ -23,8 +23,8 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const factory = request.server.app.buildFactory;
-            const credentials = request.auth.credentials;
-            const canAccess = request.server.plugins.secrets.canAccess;
+            const { credentials } = request.auth;
+            const { canAccess } = request.server.plugins.secrets;
 
             return factory.get(request.params.id)
                 .then((build) => {
@@ -39,17 +39,15 @@ module.exports = () => ({
                         return reply([]);
                     }
 
-                    return canAccess(credentials, secrets[0], 'push').then(showSecret =>
-                        reply(secrets.map((s) => {
-                            const output = s.toJson();
+                    return canAccess(credentials, secrets[0], 'push').then(showSecret => reply(secrets.map((s) => {
+                        const output = s.toJson();
 
-                            if (!showSecret) {
-                                delete output.value;
-                            }
+                        if (!showSecret) {
+                            delete output.value;
+                        }
 
-                            return output;
-                        }))
-                    );
+                        return output;
+                    })));
                 })
                 .catch(err => reply(boom.boomify(err)));
         },

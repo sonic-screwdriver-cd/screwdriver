@@ -22,9 +22,9 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const credentials = request.auth.credentials;
-            const canAccess = request.server.plugins.secrets.canAccess;
+            const { pipelineFactory } = request.server.app;
+            const { credentials } = request.auth;
+            const { canAccess } = request.server.plugins.secrets;
 
             return pipelineFactory.get(request.params.id)
                 .then((pipeline) => {

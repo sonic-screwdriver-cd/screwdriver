@@ -48,18 +48,14 @@ module.exports = () => ({
                     if (request.payload.pipelineIds) {
                         const { pipelineFactory } = request.server.app;
 
-                        return Promise.all(request.payload.pipelineIds.map(pipelineId =>
-                            pipelineFactory.get(pipelineId)))
+                        return Promise.all(request.payload.pipelineIds.map(pipelineId => pipelineFactory.get(pipelineId)))
                             .then((pipelines) => {
                                 // If the pipeline exists, then add its id to the array of pipelineIds
                                 // in oldCollection
-                                oldCollection.pipelineIds = pipelines.filter(pipeline =>
-                                    pipeline).map(pipeline => pipeline.id);
+                                oldCollection.pipelineIds = pipelines.filter(pipeline => pipeline).map(pipeline => pipeline.id);
 
                                 return oldCollection.update()
-                                    .then(updatedCollection =>
-                                        reply(updatedCollection.toJson()).code(200)
-                                    );
+                                    .then(updatedCollection => reply(updatedCollection.toJson()).code(200));
                             });
                     }
 

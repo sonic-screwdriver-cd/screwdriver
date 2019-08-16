@@ -1,14 +1,16 @@
 'use strict';
 
 const Assert = require('chai').assert;
+const { defineSupportCode } = require('cucumber');
 const request = require('../support/request');
 const sdapi = require('../support/sdapi');
 const github = require('../support/github');
-const { defineSupportCode } = require('cucumber');
 
 const TIMEOUT = 500 * 1000;
 
-defineSupportCode(({ Before, Given, When, Then }) => {
+defineSupportCode(({
+    Before, Given, When, Then
+}) => {
     Before({
         tags: '@gitflow',
         timeout: TIMEOUT
@@ -28,9 +30,7 @@ defineSupportCode(({ Before, Given, When, Then }) => {
             json: true
         }).then((response) => {
             this.jwt = response.body.token;
-        }).then(() =>
-            github.cleanUpRepository(this.branch, this.repoOrg, this.repoName)
-        );
+        }).then(() => github.cleanUpRepository(this.branch, this.repoOrg, this.repoName));
     });
 
     Given(/^an existing pipeline$/, {
@@ -63,13 +63,11 @@ defineSupportCode(({ Before, Given, When, Then }) => {
     Given(/^an existing pull request targeting the pipeline's branch$/, {
         timeout: TIMEOUT
     }, function step() {
-        const branch = this.branch;
+        const { branch } = this;
 
         return github.createBranch(branch, this.repoOrg, this.repoName)
             .then(() => github.createFile(branch, this.repoOrg, this.repoName))
-            .then(() =>
-                github.createPullRequest(branch, this.repoOrg, this.repoName)
-            )
+            .then(() => github.createPullRequest(branch, this.repoOrg, this.repoName))
             .then(({ data }) => {
                 this.pullRequestNumber = data.number;
                 this.sha = data.head.sha;
@@ -81,13 +79,11 @@ defineSupportCode(({ Before, Given, When, Then }) => {
     });
 
     When(/^a pull request is opened$/, { timeout: TIMEOUT }, function step() {
-        const branch = this.branch;
+        const { branch } = this;
 
         return github.createBranch(branch, this.repoOrg, this.repoName)
             .then(() => github.createFile(branch, this.repoOrg, this.repoName))
-            .then(() =>
-                github.createPullRequest(branch, this.repoOrg, this.repoName)
-            )
+            .then(() => github.createPullRequest(branch, this.repoOrg, this.repoName))
             .then(({ data }) => {
                 this.pullRequestNumber = data.number;
                 this.sha = data.head.sha;
@@ -109,8 +105,7 @@ defineSupportCode(({ Before, Given, When, Then }) => {
         }).then((buildData) => {
             this.previousBuildId = buildData.id;
         }).then(() => github.closePullRequest(this.repoOrg, this.repoName,
-            this.pullRequestNumber)
-        );
+            this.pullRequestNumber));
     });
 
     When(/^new changes are pushed to that pull request$/, {
@@ -196,8 +191,7 @@ defineSupportCode(({ Before, Given, When, Then }) => {
     Then(/^the GitHub status should be updated to reflect the build's status$/, function step() {
         return github.getStatus(this.repoOrg, this.repoName, this.sha)
             .then(({ data }) => {
-                data.statuses.forEach(status =>
-                    Assert.oneOf(status.state, ['success', 'pending']));
+                data.statuses.forEach(status => Assert.oneOf(status.state, ['success', 'pending']));
             });
     });
 });

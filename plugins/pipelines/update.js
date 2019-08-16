@@ -48,13 +48,13 @@ module.exports = () => ({
         handler: (request, reply) => {
             const checkoutUrl = helper.formatCheckoutUrl(request.payload.checkoutUrl);
             const rootDir = helper.sanitizeRootDir(request.payload.rootDir);
-            const id = request.params.id;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const userFactory = request.server.app.userFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { id } = request.params;
+            const { pipelineFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
             const scmContexts = pipelineFactory.scm.getScmContexts();
-            const isValidToken = request.server.plugins.pipelines.isValidToken;
+            const { isValidToken } = request.server.plugins.pipelines;
             let gitToken;
 
             if (!isValidToken(id, request.auth.credentials)) {
@@ -70,7 +70,8 @@ module.exports = () => ({
                     // if the pipeline ID is invalid, reject
                     if (!oldPipeline) {
                         throw boom.notFound(
-                            `Pipeline ${id} does not exist`);
+                            `Pipeline ${id} does not exist`
+                        );
                     }
 
                     if (oldPipeline.configPipelineId) {
@@ -104,7 +105,8 @@ module.exports = () => ({
                             .then(([oldPermissions, permissions]) => {
                                 if (!oldPermissions.admin || !permissions.admin) {
                                     throw boom.forbidden(
-                                        `User ${username} is not an admin of these repos`);
+                                        `User ${username} is not an admin of these repos`
+                                    );
                                 }
                             })
                             // check if there is already a pipeline with the new checkoutUrl
@@ -113,7 +115,8 @@ module.exports = () => ({
                                 // reject if pipeline already exists with new checkoutUrl
                                 if (newPipeline) {
                                     throw boom.conflict(
-                                        `Pipeline already exists with the ID: ${newPipeline.id}`);
+                                        `Pipeline already exists with the ID: ${newPipeline.id}`
+                                    );
                                 }
 
                                 return pipelineFactory.scm.decorateUrl({
@@ -135,11 +138,8 @@ module.exports = () => ({
                                 // update pipeline with new scmRepo and branch
                                 return oldPipeline.update()
                                     .then(updatedPipeline => updatedPipeline.sync())
-                                    .then(syncedPipeline =>
-                                        reply(syncedPipeline.toJson()).code(200)
-                                    );
-                            })
-                        );
+                                    .then(syncedPipeline => reply(syncedPipeline.toJson()).code(200));
+                            }));
                 })
                 // something broke, respond with error
                 .catch(err => reply(boom.boomify(err)));

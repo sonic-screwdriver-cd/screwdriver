@@ -85,7 +85,7 @@ function createBranch(branch, repoOwner, repoName) {
         ref: 'heads/master'
     })
         .then((referenceData) => {
-            const sha = referenceData.data.object.sha;
+            const { sha } = referenceData.data.object;
 
             return octokit.git.createRef({
                 owner,

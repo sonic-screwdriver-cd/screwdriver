@@ -27,9 +27,7 @@ function getPipelinePRInfo(pipeline) {
             }
 
             // Return array of prJobs' builds
-            return Promise.all(prJobs.map(job =>
-                job.getBuilds()
-            ));
+            return Promise.all(prJobs.map(job => job.getBuilds()));
         })
         .then((prJobsBuilds) => {
             if (!prJobsBuilds || !prJobsBuilds.length) {
@@ -119,8 +117,7 @@ function getPipelinesInfo(pipelines, eventFactory) {
                     result.lastBuilds = pipelineHealth;
 
                     return result;
-                })
-        );
+                }));
 }
 
 module.exports = () => ({

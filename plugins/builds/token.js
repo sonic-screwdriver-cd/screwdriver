@@ -21,8 +21,8 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const profile = request.auth.credentials;
-            const buildTimeout = request.payload.buildTimeout;
-            const buildFactory = request.server.app.buildFactory;
+            const { buildTimeout } = request.payload;
+            const { buildFactory } = request.server.app;
 
             return buildFactory.get(request.params.id).then((build) => {
                 if (!build) {

@@ -22,11 +22,11 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const bannerFactory = request.server.app.bannerFactory;
-            const id = request.params.id; // id of banner to delete
+            const { bannerFactory } = request.server.app;
+            const { id } = request.params; // id of banner to delete
 
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             // lookup whether user is admin
             const adminDetails = request.server.plugins.banners

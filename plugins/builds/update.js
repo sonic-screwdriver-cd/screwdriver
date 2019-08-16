@@ -25,8 +25,10 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             // eslint-disable-next-line max-len
-            const { buildFactory, eventFactory, jobFactory, triggerFactory, userFactory, stepFactory } = request.server.app;
-            const id = request.params.id;
+            const {
+                buildFactory, eventFactory, jobFactory, triggerFactory, userFactory, stepFactory
+            } = request.server.app;
+            const { id } = request.params;
             const desiredStatus = request.payload.status;
             const { statusMessage, stats } = request.payload;
             const { username, scmContext, scope } = request.auth.credentials;
@@ -46,7 +48,8 @@ module.exports = () => ({
                     // Check build status
                     if (!['RUNNING', 'QUEUED', 'BLOCKED', 'UNSTABLE'].includes(build.status)) {
                         throw boom.forbidden(
-                            'Can only update RUNNING, QUEUED, BLOCKED, or UNSTABLE builds');
+                            'Can only update RUNNING, QUEUED, BLOCKED, or UNSTABLE builds'
+                        );
                     }
 
                     // Users can only mark a running or queued build as aborted
@@ -73,8 +76,8 @@ module.exports = () => ({
                                     .then((permissions) => {
                                         if (!permissions.push && !adminDetails.isAdmin) {
                                             throw boom.forbidden(
-                                                `User ${user.getFullDisplayName()} does not ` +
-                                                'have permission to abort this build'
+                                                `User ${user.getFullDisplayName()} does not `
+                                                + 'have permission to abort this build'
                                             );
                                         }
 
@@ -160,51 +163,48 @@ module.exports = () => ({
 
                     // Only trigger next build on success
                     return Promise.all([build.update(), event.update()]);
-                }).then(([newBuild, newEvent]) =>
-                    newBuild.job.then(job => job.pipeline.then((pipeline) => {
-                        request.server.emit('build_status', {
-                            settings: job.permutations[0].settings,
-                            status: newBuild.status,
-                            event: newEvent.toJson(),
-                            pipeline: pipeline.toJson(),
-                            jobName: job.name,
-                            build: newBuild.toJson(),
-                            buildLink:
+                }).then(([newBuild, newEvent]) => newBuild.job.then(job => job.pipeline.then((pipeline) => {
+                    request.server.emit('build_status', {
+                        settings: job.permutations[0].settings,
+                        status: newBuild.status,
+                        event: newEvent.toJson(),
+                        pipeline: pipeline.toJson(),
+                        jobName: job.name,
+                        build: newBuild.toJson(),
+                        buildLink:
                             `${buildFactory.uiUri}/pipelines/${pipeline.id}/builds/${id}`
-                        });
+                    });
 
-                        // Guard against triggering non-successful or unstable builds
-                        if (newBuild.status !== 'SUCCESS') {
-                            return null;
-                        }
+                    // Guard against triggering non-successful or unstable builds
+                    if (newBuild.status !== 'SUCCESS') {
+                        return null;
+                    }
 
-                        const src = `~sd@${pipeline.id}:${job.name}`;
+                    const src = `~sd@${pipeline.id}:${job.name}`;
 
-                        return triggerNextJobs({
-                            pipeline, job, build: newBuild, username, scmContext
-                        })
-                            .then(() => triggerFactory.list({ params: { src } }))
-                            .then((records) => {
+                    return triggerNextJobs({
+                        pipeline, job, build: newBuild, username, scmContext
+                    })
+                        .then(() => triggerFactory.list({ params: { src } }))
+                        .then((records) => {
                             // Use set to remove duplicate and keep only unique pipelineIds
-                                const triggeredPipelines = new Set();
+                            const triggeredPipelines = new Set();
 
-                                records.forEach((record) => {
-                                    const pipelineId = record.dest.match(EXTERNAL_TRIGGER)[1];
+                            records.forEach((record) => {
+                                const pipelineId = record.dest.match(EXTERNAL_TRIGGER)[1];
 
-                                    triggeredPipelines.add(pipelineId);
-                                });
+                                triggeredPipelines.add(pipelineId);
+                            });
 
-                                return Array.from(triggeredPipelines);
-                            })
-                            .then(pipelineIds => Promise.all(pipelineIds.map(pipelineId =>
-                                triggerEvent({
-                                    pipelineId: parseInt(pipelineId, 10),
-                                    startFrom: src,
-                                    causeMessage: `Triggered by build ${username}`,
-                                    parentBuildId: newBuild.id
-                                })
-                            )));
-                    }).then(() => reply(newBuild.toJson()).code(200))))
+                            return Array.from(triggeredPipelines);
+                        })
+                        .then(pipelineIds => Promise.all(pipelineIds.map(pipelineId => triggerEvent({
+                            pipelineId: parseInt(pipelineId, 10),
+                            startFrom: src,
+                            causeMessage: `Triggered by build ${username}`,
+                            parentBuildId: newBuild.id
+                        }))));
+                }).then(() => reply(newBuild.toJson()).code(200))))
                 .catch(err => reply(boom.boomify(err)));
         },
         validate: {

@@ -32,7 +32,9 @@ exports.register = (server, options, next) => {
      * @return {Promise}
      */
     server.expose('canRemove', (credentials, command, permission) => {
-        const { username, scmContext, scope, isPR } = credentials;
+        const {
+            username, scmContext, scope, isPR
+        } = credentials;
         const { userFactory, pipelineFactory } = server.root.app;
 
         return pipelineFactory.get(command.pipelineId).then((pipeline) => {
@@ -48,8 +50,8 @@ exports.register = (server, options, next) => {
 
                     return user.getPermissions(pipeline.scmUri).then((permissions) => {
                         if (!permissions[permission]) {
-                            throw boom.forbidden(`User ${username} does not have ` +
-                                `${permission} access for this command`);
+                            throw boom.forbidden(`User ${username} does not have `
+                                + `${permission} access for this command`);
                         }
 
                         return true;

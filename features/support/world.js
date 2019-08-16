@@ -4,8 +4,8 @@ const Assert = require('chai').assert;
 const path = require('path');
 const env = require('node-env-file');
 const requestretry = require('requestretry');
-const request = require('../support/request');
 const { defineSupportCode } = require('cucumber');
+const request = require('../support/request');
 
 /**
  * Retry until the build has finished
@@ -118,68 +118,61 @@ function CustomWorld({ attach, parameters }) {
     this.scmContext = process.env.TEST_SCM_CONTEXT || 'github';
     this.namespace = 'v4';
     this.promiseToWait = time => promiseToWait(time);
-    this.getJwt = apiToken =>
-        request({
-            followAllRedirects: true,
-            json: true,
-            method: 'GET',
-            url: `${this.instance}/${this.namespace}/auth/token?api_token=${apiToken}`
-        });
-    this.waitForBuild = buildID =>
-        requestretry({
-            uri: `${this.instance}/${this.namespace}/builds/${buildID}`,
-            method: 'GET',
-            maxAttempts: 25,
-            retryDelay: 15000,
-            retryStrategy: buildRetryStrategy,
-            json: true,
-            auth: {
-                bearer: this.jwt
-            }
-        });
-    this.loginWithToken = apiToken =>
-        request({
-            uri: `${this.instance}/${this.namespace}/auth/logout`,
-            method: 'POST',
-            auth: {
-                bearer: this.jwt
-            }
+    this.getJwt = apiToken => request({
+        followAllRedirects: true,
+        json: true,
+        method: 'GET',
+        url: `${this.instance}/${this.namespace}/auth/token?api_token=${apiToken}`
+    });
+    this.waitForBuild = buildID => requestretry({
+        uri: `${this.instance}/${this.namespace}/builds/${buildID}`,
+        method: 'GET',
+        maxAttempts: 25,
+        retryDelay: 15000,
+        retryStrategy: buildRetryStrategy,
+        json: true,
+        auth: {
+            bearer: this.jwt
+        }
+    });
+    this.loginWithToken = apiToken => request({
+        uri: `${this.instance}/${this.namespace}/auth/logout`,
+        method: 'POST',
+        auth: {
+            bearer: this.jwt
+        }
         // Actual login is accomplished through getJwt
-        }).then(() => this.getJwt(apiToken).then((response) => {
-            this.loginResponse = response;
-        }));
-    this.getPipeline = pipelineId =>
-        request({
-            uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}/jobs`,
-            method: 'GET',
-            json: true,
-            auth: {
-                bearer: this.jwt
-            }
-        });
-    this.createPipeline = (repoName, branch) =>
-        request({
-            uri: `${this.instance}/${this.namespace}/pipelines`,
-            method: 'POST',
-            auth: {
-                bearer: this.jwt
-            },
-            body: {
-                checkoutUrl: `git@${this.scmHostname}:${this.testOrg}/${repoName}.git#${branch}`
-            },
-            json: true
-        });
-    this.deletePipeline = pipelineId =>
-        request({
-            uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}`,
-            method: 'DELETE',
-            auth: {
-                bearer: this.jwt
-            },
-            json: true
-        });
+    }).then(() => this.getJwt(apiToken).then((response) => {
+        this.loginResponse = response;
+    }));
+    this.getPipeline = pipelineId => request({
+        uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}/jobs`,
+        method: 'GET',
+        json: true,
+        auth: {
+            bearer: this.jwt
+        }
+    });
+    this.createPipeline = (repoName, branch) => request({
+        uri: `${this.instance}/${this.namespace}/pipelines`,
+        method: 'POST',
+        auth: {
+            bearer: this.jwt
+        },
+        body: {
+            checkoutUrl: `git@${this.scmHostname}:${this.testOrg}/${repoName}.git#${branch}`
+        },
+        json: true
+    });
+    this.deletePipeline = pipelineId => request({
+        uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}`,
+        method: 'DELETE',
+        auth: {
+            bearer: this.jwt
+        },
+        json: true
+    });
     this.ensurePipelineExists = ensurePipelineExists;
 }
 
-defineSupportCode(({ setWorldConstructor }) =>
-    setWorldConstructor(CustomWorld));
+defineSupportCode(({ setWorldConstructor }) => setWorldConstructor(CustomWorld));

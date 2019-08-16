@@ -23,11 +23,11 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const tokenFactory = request.server.app.tokenFactory;
-            const userFactory = request.server.app.userFactory;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { tokenFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { pipelineFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             return Promise.all([
                 tokenFactory.get(request.params.tokenId),
@@ -63,7 +63,8 @@ module.exports = () => ({
                             .then((tokens) => {
                                 // Make sure it won't cause a name conflict
                                 const match = tokens && tokens.find(
-                                    t => t.name === request.payload.name);
+                                    t => t.name === request.payload.name
+                                );
 
                                 if (match && request.params.tokenId !== match.id) {
                                     throw boom.conflict(`Token ${match.name} already exists`);

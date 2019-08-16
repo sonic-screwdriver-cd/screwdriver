@@ -26,14 +26,14 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const templateFactory = request.server.app.templateFactory;
-            const templateTagFactory = request.server.app.templateTagFactory;
-            const pipelineId = request.auth.credentials.pipelineId;
-            const isPR = request.auth.credentials.isPR;
+            const { pipelineFactory } = request.server.app;
+            const { templateFactory } = request.server.app;
+            const { templateTagFactory } = request.server.app;
+            const { pipelineId } = request.auth.credentials;
+            const { isPR } = request.auth.credentials;
             const name = request.params.templateName;
             const tag = request.params.tagName;
-            const version = request.payload.version;
+            const { version } = request.payload;
 
             return Promise.all([
                 pipelineFactory.get(pipelineId),

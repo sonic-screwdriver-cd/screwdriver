@@ -2,11 +2,13 @@
 
 const Assert = require('chai').assert;
 const jwt = require('jsonwebtoken');
+const { defineSupportCode } = require('cucumber');
 const request = require('../support/request');
 const sdapi = require('../support/sdapi');
-const { defineSupportCode } = require('cucumber');
 
-defineSupportCode(({ Before, Given, When, Then }) => {
+defineSupportCode(({
+    Before, Given, When, Then
+}) => {
     Before('@apitoken', function hook() {
         this.loginResponse = null;
         this.testToken = null;
@@ -65,9 +67,8 @@ defineSupportCode(({ Before, Given, When, Then }) => {
             },
             json: true
         }).then((response) => {
-            const lastUsed = response.body
-                .find(token => token.name === tokenName)
-                .lastUsed;
+            const { lastUsed } = response.body
+                .find(token => token.name === tokenName);
 
             Assert.notEqual(lastUsed, '');
         });
@@ -136,11 +137,9 @@ defineSupportCode(({ Before, Given, When, Then }) => {
         const expectedKeys = ['id', 'name', 'lastUsed'];
         const forbiddenKeys = ['hash', 'value'];
 
-        expectedKeys.forEach(property =>
-            Assert.property(this.testToken, property));
+        expectedKeys.forEach(property => Assert.property(this.testToken, property));
 
-        forbiddenKeys.forEach(property =>
-            Assert.notProperty(this.testToken, property));
+        forbiddenKeys.forEach(property => Assert.notProperty(this.testToken, property));
     });
 
     When(/^he changes the label associated with the token$/, function step() {

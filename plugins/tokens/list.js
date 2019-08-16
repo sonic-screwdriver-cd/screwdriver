@@ -22,9 +22,9 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const userFactory = request.server.app.userFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { userFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             return userFactory.get({ username, scmContext })
                 .then((user) => {

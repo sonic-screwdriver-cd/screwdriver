@@ -22,9 +22,9 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const tokenFactory = request.server.app.tokenFactory;
-            const canAccess = request.server.plugins.tokens.canAccess;
-            const credentials = request.auth.credentials;
+            const { tokenFactory } = request.server.app;
+            const { canAccess } = request.server.plugins.tokens;
+            const { credentials } = request.auth;
 
             // Get the token first
             return tokenFactory.get(request.params.id)

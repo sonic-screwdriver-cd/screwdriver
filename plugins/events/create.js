@@ -21,22 +21,22 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const eventFactory = request.server.app.eventFactory;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const userFactory = request.server.app.userFactory;
-            const buildFactory = request.server.app.buildFactory;
-            const jobFactory = request.server.app.jobFactory;
-            const scm = eventFactory.scm;
-            const scmContext = request.auth.credentials.scmContext;
-            const username = request.auth.credentials.username;
-            const isValidToken = request.server.plugins.pipelines.isValidToken;
-            const meta = request.payload.meta;
-            const causeMessage = request.payload.causeMessage;
-            const creator = request.payload.creator;
-            const updateAdmins = request.server.plugins.events.updateAdmins;
+            const { eventFactory } = request.server.app;
+            const { pipelineFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { buildFactory } = request.server.app;
+            const { jobFactory } = request.server.app;
+            const { scm } = eventFactory;
+            const { scmContext } = request.auth.credentials;
+            const { username } = request.auth.credentials;
+            const { isValidToken } = request.server.plugins.pipelines;
+            const { meta } = request.payload;
+            const { causeMessage } = request.payload;
+            const { creator } = request.payload;
+            const { updateAdmins } = request.server.plugins.events;
 
             return Promise.resolve().then(() => {
-                const buildId = request.payload.buildId;
+                const { buildId } = request.payload;
 
                 if (buildId) { // restart case
                     return buildFactory.get(buildId)
@@ -56,7 +56,9 @@ module.exports = () => ({
                     parentEventId: request.payload.parentEventId,
                     prNumber: request.payload.prNum
                 };
-            }).then(({ pipelineId, startFrom, parentBuildId, parentEventId, prNumber }) => {
+            }).then(({
+                pipelineId, startFrom, parentBuildId, parentEventId, prNumber
+            }) => {
                 const payload = {
                     pipelineId,
                     scmContext,
@@ -175,8 +177,7 @@ module.exports = () => ({
                                 }
 
                                 return Promise.resolve();
-                            })
-                        )
+                            }))
                         // User has good permissions, create an event
                         .then(() => {
                             // If there is parentEvent, pass workflowGraph and sha to payload
@@ -188,8 +189,7 @@ module.exports = () => ({
                                         payload.sha = parentEvent.sha;
 
                                         if (parentEvent.configPipelineSha) {
-                                            payload.configPipelineSha =
-                                                parentEvent.configPipelineSha;
+                                            payload.configPipelineSha = parentEvent.configPipelineSha;
                                         }
                                     });
                             }

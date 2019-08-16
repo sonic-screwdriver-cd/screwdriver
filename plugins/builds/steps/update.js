@@ -20,8 +20,8 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const buildFactory = request.server.app.buildFactory;
-            const stepFactory = request.server.app.stepFactory;
+            const { buildFactory } = request.server.app;
+            const { stepFactory } = request.server.app;
             const buildId = request.params.id;
             const stepName = request.params.name;
             const buildIdCred = request.auth.credentials.username;
@@ -44,7 +44,7 @@ module.exports = () => ({
                         .then((step) => {
                             if (!step) {
                                 // Update build steps if no step model
-                                const steps = build.steps;
+                                const { steps } = build;
 
                                 stepIndex = steps.findIndex(s => s.name === stepName);
 

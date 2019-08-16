@@ -3,12 +3,14 @@
 /* eslint-disable no-unused-vars */
 
 const Assert = require('chai').assert;
-const request = require('../support/request');
 const { defineSupportCode } = require('cucumber');
+const request = require('../support/request');
 
 const TIMEOUT = 240 * 1000;
 
-defineSupportCode(({ Before, Given, When, Then }) => {
+defineSupportCode(({
+    Before, Given, When, Then
+}) => {
     Before({
         tags: '@sd-step'
     }, function hook() {
@@ -79,23 +81,21 @@ defineSupportCode(({ Before, Given, When, Then }) => {
                     }
                     Assert.equal(this.image, this.expectedImage);
                 })
-                .then(() =>
-                    request({
-                        uri: `${this.instance}/${this.namespace}/builds`,
-                        method: 'POST',
-                        body: {
-                            jobId: this.jobId
-                        },
-                        auth: {
-                            bearer: this.jwt
-                        },
-                        json: true
-                    }).then((resp) => {
-                        Assert.equal(resp.statusCode, 201);
+                .then(() => request({
+                    uri: `${this.instance}/${this.namespace}/builds`,
+                    method: 'POST',
+                    body: {
+                        jobId: this.jobId
+                    },
+                    auth: {
+                        bearer: this.jwt
+                    },
+                    json: true
+                }).then((resp) => {
+                    Assert.equal(resp.statusCode, 201);
 
-                        this.buildId = resp.body.id;
-                    })
-                );
+                    this.buildId = resp.body.id;
+                }));
         });
 
     When(/^sd-step command is executed to use (.*) package$/,

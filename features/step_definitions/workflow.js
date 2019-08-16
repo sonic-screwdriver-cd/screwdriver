@@ -1,14 +1,16 @@
 'use strict';
 
 const Assert = require('chai').assert;
+const { defineSupportCode } = require('cucumber');
 const github = require('../support/github');
 const sdapi = require('../support/sdapi');
-const { defineSupportCode } = require('cucumber');
 
 const TIMEOUT = 240 * 1000;
 const WAIT_TIME = 3;
 
-defineSupportCode(({ Before, Given, When, Then }) => {
+defineSupportCode(({
+    Before, Given, When, Then
+}) => {
     Before({
         tags: '@workflow'
     }, function hook() {
@@ -52,7 +54,7 @@ defineSupportCode(({ Before, Given, When, Then }) => {
                     Assert.ok(job, 'Given job does not exist on pipeline');
 
                     const requiresList = expectedJobs[i].requires.split(/\s*,\s*/);
-                    const requires = job.permutations[0].requires;
+                    const { requires } = job.permutations[0];
 
                     for (let j = 0; j < requiresList.length; j += 1) {
                         Assert.ok(requires.includes(requiresList[j]),

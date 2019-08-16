@@ -49,8 +49,8 @@ exports.register = (server, options, next) => {
 
                     return user.getPermissions(pipeline.scmUri).then((permissions) => {
                         if (!permissions[permission]) {
-                            throw boom.forbidden(`User ${username} does not have ` +
-                                `${permission} access for this template`);
+                            throw boom.forbidden(`User ${username} does not have `
+                                + `${permission} access for this template`);
                         }
 
                         return true;

@@ -21,7 +21,7 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const buildFactory = request.server.app.buildFactory;
+            const { buildFactory } = request.server.app;
 
             buildFactory.get(request.params.id)
                 .then((buildModel) => {

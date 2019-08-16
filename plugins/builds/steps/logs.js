@@ -18,7 +18,9 @@ const MAX_LINES_BIG = 1000;
  * @param  {String}     config.sort                Method for sorting log lines ('ascending' or 'descending')
  * @return {Promise}                               [Array of log lines]
  */
-async function fetchLog({ baseUrl, linesFrom, authToken, page, sort }) {
+async function fetchLog({
+    baseUrl, linesFrom, authToken, page, sort
+}) {
     const output = [];
 
     return new Promise((resolve, reject) => {
@@ -64,7 +66,8 @@ async function getMaxLines({ baseUrl, authToken }) {
             authToken,
             sort: 'ascending',
             linesFrom: 0,
-            page: 0 });
+            page: 0
+        });
     } catch (err) {
         winston.error(err);
         throw new Error(err);
@@ -98,7 +101,9 @@ async function loadLines({
     let lines;
 
     try {
-        lines = await fetchLog({ baseUrl, linesFrom, authToken, page, sort });
+        lines = await fetchLog({
+            baseUrl, linesFrom, authToken, page, sort
+        });
     } catch (err) {
         winston.error(err);
         throw new Error(err);
@@ -106,8 +111,8 @@ async function loadLines({
 
     const linesCount = lines.length;
     const pagesToLoadUpdated = pagesToLoad - 1;
-    const linesFromUpdated = sort === 'descending' ?
-        linesFrom - linesCount : linesCount + linesFrom;
+    const linesFromUpdated = sort === 'descending'
+        ? linesFrom - linesCount : linesCount + linesFrom;
     // If we got lines AND there are more lines to load
     const descLoadNext = sort === 'descending' && linesCount > 0 && linesFrom - linesCount > 0;
     // If we got lines AND we reached the edge of a page
@@ -162,7 +167,7 @@ module.exports = config => ({
             const factory = req.server.app.buildFactory;
             const buildId = req.params.id;
             const stepName = req.params.name;
-            const headers = req.headers;
+            const { headers } = req;
 
             factory.get(buildId)
                 .then((model) => {
@@ -189,7 +194,7 @@ module.exports = config => ({
                     const baseUrl = `${config.ecosystem.store}/v1/builds/`
                         + `${buildId}/${stepName}/log`;
                     const authToken = headers.authorization;
-                    const sort = req.query.sort;
+                    const { sort } = req.query;
                     const pagesToLoad = req.query.pages;
                     const linesFrom = req.query.from;
 

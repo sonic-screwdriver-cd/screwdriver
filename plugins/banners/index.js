@@ -28,7 +28,7 @@ exports.register = (server, options, next) => {
         };
 
         if (scmContext) {
-            const scm = server.root.app.bannerFactory.scm;
+            const { scm } = server.root.app.bannerFactory;
             const scmDisplayName = scm.getDisplayName({ scmContext });
             const adminsList = options.admins;
 

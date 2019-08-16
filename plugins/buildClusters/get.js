@@ -23,7 +23,7 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const name = request.params.name;
+            const { name } = request.params;
             const factory = request.server.app.buildClusterFactory;
             const config = {
                 params: {

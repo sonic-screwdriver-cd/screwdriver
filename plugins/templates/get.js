@@ -25,7 +25,7 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const templateFactory = request.server.app.templateFactory;
+            const { templateFactory } = request.server.app;
             const { name, versionOrTag } = request.params;
 
             return templateFactory.getTemplate(`${name}@${versionOrTag}`)

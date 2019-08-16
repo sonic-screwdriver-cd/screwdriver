@@ -1,8 +1,8 @@
 'use strict';
 
 const Assert = require('chai').assert;
-const request = require('../support/request');
 const { defineSupportCode } = require('cucumber');
+const request = require('../support/request');
 
 // Timeout of 15 seconds
 const TIMEOUT = 15 * 1000;
@@ -53,7 +53,9 @@ function deleteCollection(id) {
     });
 }
 
-defineSupportCode(({ Before, Given, Then, When, After }) => {
+defineSupportCode(({
+    Before, Given, Then, When, After
+}) => {
     Before('@collections', function hook() {
         this.repoOrg = this.testOrg;
         this.repoName = 'functional-collections';
@@ -138,8 +140,8 @@ defineSupportCode(({ Before, Given, Then, When, After }) => {
                     const pipelineId = parseInt(this.pipelineId, 10);
 
                     return request({
-                        uri: `${this.instance}/${this.namespace}/collections/` +
-                            `${this.firstCollectionId}`,
+                        uri: `${this.instance}/${this.namespace}/collections/`
+                            + `${this.firstCollectionId}`,
                         method: 'PUT',
                         auth: {
                             bearer: this.jwt

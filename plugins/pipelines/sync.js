@@ -22,12 +22,12 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const id = request.params.id;
-            const pipelineFactory = request.server.app.pipelineFactory;
-            const userFactory = request.server.app.userFactory;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
-            const isValidToken = request.server.plugins.pipelines.isValidToken;
+            const { id } = request.params;
+            const { pipelineFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
+            const { isValidToken } = request.server.plugins.pipelines;
 
             if (!isValidToken(id, request.auth.credentials)) {
                 return reply(boom.unauthorized('Token does not have permission to this pipeline'));

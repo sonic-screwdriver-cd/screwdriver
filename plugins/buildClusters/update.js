@@ -22,13 +22,13 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const buildClusterFactory = request.server.app.buildClusterFactory;
-            const userFactory = request.server.app.userFactory;
-            const scm = buildClusterFactory.scm;
-            const name = request.params.name; // name of build cluster to update
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
-            const scmOrganizations = request.payload.scmOrganizations;
+            const { buildClusterFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { scm } = buildClusterFactory;
+            const { name } = request.params; // name of build cluster to update
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
+            const { scmOrganizations } = request.payload;
 
             // Check permissions
             // Must be Screwdriver admin to update Screwdriver build cluster
@@ -56,9 +56,7 @@ module.exports = () => ({
                         Object.assign(buildClusters[0], request.payload);
 
                         return buildClusters[0].update()
-                            .then(updatedBuildCluster =>
-                                reply(updatedBuildCluster.toJson()).code(200)
-                            );
+                            .then(updatedBuildCluster => reply(updatedBuildCluster.toJson()).code(200));
                     })
                     .catch(err => reply(boom.boomify(err)));
             }
@@ -92,28 +90,25 @@ module.exports = () => ({
                         const newOrgs = scmOrganizations || [];
                         const combined = [...new Set([...orgs, ...newOrgs])];
 
-                        return Promise.all(combined.map(organization =>
-                            scm.getOrgPermissions({
-                                organization,
-                                username,
-                                token,
-                                scmContext
-                            })
-                                .then((permissions) => {
-                                    if (!permissions.admin) {
-                                        throw boom.forbidden(
-                                            `User ${username} does not have
+                        return Promise.all(combined.map(organization => scm.getOrgPermissions({
+                            organization,
+                            username,
+                            token,
+                            scmContext
+                        })
+                            .then((permissions) => {
+                                if (!permissions.admin) {
+                                    throw boom.forbidden(
+                                        `User ${username} does not have
                                             administrative privileges on scm
                                             organization ${organization}.`
-                                        );
-                                    }
-                                })
-                        )).then(() => {
+                                    );
+                                }
+                            }))).then(() => {
                             Object.assign(buildCluster, request.payload);
 
                             return buildCluster.update()
-                                .then(updatedBuildCluster =>
-                                    reply(updatedBuildCluster.toJson()).code(200));
+                                .then(updatedBuildCluster => reply(updatedBuildCluster.toJson()).code(200));
                         });
                     }))
                 .catch(err => reply(boom.boomify(err)));

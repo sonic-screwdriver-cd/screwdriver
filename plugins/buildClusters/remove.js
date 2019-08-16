@@ -23,7 +23,7 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const { buildClusterFactory, userFactory } = request.server.app;
-            const name = request.params.name;
+            const { name } = request.params;
             const { username, scmContext } = request.auth.credentials;
 
             // Fetch the buildCluster and user models

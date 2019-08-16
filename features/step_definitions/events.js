@@ -1,8 +1,8 @@
 'use strict';
 
 const Assert = require('chai').assert;
-const request = require('../support/request');
 const { defineSupportCode } = require('cucumber');
+const request = require('../support/request');
 
 const TIMEOUT = 240 * 1000;
 

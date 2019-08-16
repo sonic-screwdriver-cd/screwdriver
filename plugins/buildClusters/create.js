@@ -21,12 +21,12 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const buildClusterFactory = request.server.app.buildClusterFactory;
-            const userFactory = request.server.app.userFactory;
-            const scm = buildClusterFactory.scm;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
-            const scmOrganizations = request.payload.scmOrganizations;
+            const { buildClusterFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { scm } = buildClusterFactory;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
+            const { scmOrganizations } = request.payload;
             const payload = {
                 name: request.payload.name,
                 scmOrganizations,
@@ -77,23 +77,21 @@ module.exports = () => ({
             // Must have admin permission on org(s) if adding org-specific build cluster
             return userFactory.get({ username, scmContext })
                 .then(user => user.unsealToken())
-                .then(token => Promise.all(scmOrganizations.map(organization =>
-                    scm.getOrgPermissions({
-                        organization,
-                        username,
-                        token,
-                        scmContext
-                    })
-                        .then((permissions) => {
-                            if (!permissions.admin) {
-                                throw boom.forbidden(
-                                    `User ${username} does not have
+                .then(token => Promise.all(scmOrganizations.map(organization => scm.getOrgPermissions({
+                    organization,
+                    username,
+                    token,
+                    scmContext
+                })
+                    .then((permissions) => {
+                        if (!permissions.admin) {
+                            throw boom.forbidden(
+                                `User ${username} does not have
                                     administrative privileges on scm
                                     organization ${organization}.`
-                                );
-                            }
-                        })
-                )))
+                            );
+                        }
+                    }))))
                 .then(() => buildClusterFactory.create(payload))
                 .then((buildCluster) => {
                     // everything succeeded, inform the user

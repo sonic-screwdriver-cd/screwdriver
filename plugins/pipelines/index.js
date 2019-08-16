@@ -77,10 +77,8 @@ exports.register = (server, options, next) => {
      * @param  {String} credentials.pipelineId ID of pipeline which the token is allowed to access
      * @param  {String} credentials.scope      Scope whose token is allowed
      */
-    server.expose('isValidToken', (id, credentials) =>
-        !credentials.scope.includes('pipeline') ||
-                parseInt(id, 10) === parseInt(credentials.pipelineId, 10)
-    );
+    server.expose('isValidToken', (id, credentials) => !credentials.scope.includes('pipeline')
+                || parseInt(id, 10) === parseInt(credentials.pipelineId, 10));
 
     server.route([
         createRoute(),

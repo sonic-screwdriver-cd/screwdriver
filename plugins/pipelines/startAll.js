@@ -24,8 +24,8 @@ module.exports = () => ({
         handler: (request, reply) => {
             const { pipelineFactory, eventFactory, userFactory } = request.server.app;
             const { username, scmContext } = request.auth.credentials;
-            const id = request.params.id;
-            const scm = pipelineFactory.scm;
+            const { id } = request.params;
+            const { scm } = pipelineFactory;
 
             return Promise.all([
                 pipelineFactory.get(id),
@@ -50,20 +50,19 @@ module.exports = () => ({
                         configPipelineId: id
                     }
                 }))
-                .then(pipelines => pipelines.map(p =>
-                    p.token.then(token => scm.getCommitSha({
+                .then(pipelines => pipelines.map(p => p.token.then(token => scm.getCommitSha({
+                    scmContext,
+                    scmUri: p.scmUri,
+                    token
+                }))
+                    .then(sha => eventFactory.create({
+                        pipelineId: p.id,
+                        sha,
+                        username,
                         scmContext,
-                        scmUri: p.scmUri,
-                        token
-                    }))
-                        .then(sha => eventFactory.create({
-                            pipelineId: p.id,
-                            sha,
-                            username,
-                            scmContext,
-                            startFrom: '~commit',
-                            causeMessage: `Started by ${username}`
-                        }))))
+                        startFrom: '~commit',
+                        causeMessage: `Started by ${username}`
+                    }))))
                 .then(() => reply().code(201))
                 .catch(err => reply(boom.boomify(err)));
         },

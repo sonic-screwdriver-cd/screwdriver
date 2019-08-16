@@ -26,14 +26,15 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const commandFactory = request.server.app.commandFactory;
+            const { commandFactory } = request.server.app;
             const { namespace, name, versionOrTag } = request.params;
 
             return commandFactory.getCommand(`${namespace}/${name}@${versionOrTag}`)
                 .then((command) => {
                     if (!command) {
                         throw boom.notFound(
-                            `Command ${namespace}/${name}@${versionOrTag} does not exist`);
+                            `Command ${namespace}/${name}@${versionOrTag} does not exist`
+                        );
                     }
 
                     return reply(command);

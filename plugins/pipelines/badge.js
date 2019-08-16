@@ -21,7 +21,8 @@ function getUrl({
     statusColor,
     encodeBadgeSubject,
     buildsStatus = [],
-    subject = 'pipeline' }) {
+    subject = 'pipeline'
+}) {
     const counts = {};
     const parts = [];
     let worst = 'lightgrey';
@@ -91,7 +92,7 @@ module.exports = config => ({
         handler: (request, reply) => {
             const factory = request.server.app.pipelineFactory;
             const badgeService = request.server.app.ecosystem.badges;
-            const encodeBadgeSubject = request.server.plugins.pipelines.encodeBadgeSubject;
+            const { encodeBadgeSubject } = request.server.plugins.pipelines;
             const { statusColor } = config;
             const badgeConfig = {
                 badgeService,
@@ -136,7 +137,8 @@ module.exports = config => ({
                                 }
 
                                 return reply.redirect(getUrl(Object.assign(
-                                    badgeConfig, { buildsStatus, subject: pipeline.name })));
+                                    badgeConfig, { buildsStatus, subject: pipeline.name }
+                                )));
                             });
                         };
 

@@ -23,9 +23,9 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const secretFactory = request.server.app.secretFactory;
-            const credentials = request.auth.credentials;
-            const canAccess = request.server.plugins.secrets.canAccess;
+            const { secretFactory } = request.server.app;
+            const { credentials } = request.auth;
+            const { canAccess } = request.server.plugins.secrets;
 
             return secretFactory.get(request.params.id)
                 .then((secret) => {

@@ -23,8 +23,8 @@ module.exports = () => ({
         },
         handler: (request, reply) => {
             const factory = request.server.app.secretFactory;
-            const credentials = request.auth.credentials;
-            const canAccess = request.server.plugins.secrets.canAccess;
+            const { credentials } = request.auth;
+            const { canAccess } = request.server.plugins.secrets;
 
             return factory.get(request.params.id)
                 .then((secret) => {

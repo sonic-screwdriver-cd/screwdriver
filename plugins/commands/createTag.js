@@ -31,10 +31,10 @@ module.exports = () => ({
         handler: (request, reply) => {
             const { pipelineFactory, commandFactory, commandTagFactory } = request.server.app;
             const { pipelineId, isPR } = request.auth.credentials;
-            const namespace = request.params.namespace;
-            const name = request.params.name;
+            const { namespace } = request.params;
+            const { name } = request.params;
             const tag = request.params.tagName;
-            let version = request.payload.version;
+            let { version } = request.payload;
             const isVersion = VERSION_REGEX.exec(version);
 
             return Promise.resolve().then(() => {
@@ -76,7 +76,9 @@ module.exports = () => ({
                 }
 
                 // If command exists, then create the tag
-                return commandTagFactory.create({ namespace, name, tag, version })
+                return commandTagFactory.create({
+                    namespace, name, tag, version
+                })
                     .then((newTag) => {
                         const location = urlLib.format({
                             host: request.headers.host,

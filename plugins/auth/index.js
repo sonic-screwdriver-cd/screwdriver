@@ -3,17 +3,17 @@
 const authJWT = require('hapi-auth-jwt2');
 const authToken = require('hapi-auth-bearer-token');
 const bell = require('bell');
-const contextsRoute = require('./contexts');
 const crumb = require('crumb');
-const crumbRoute = require('./crumb');
 const joi = require('joi');
 const jwt = require('jsonwebtoken');
+const sugar = require('hapi-auth-cookie');
+const uuid = require('uuid/v4');
+const contextsRoute = require('./contexts');
+const crumbRoute = require('./crumb');
 const keyRoute = require('./key');
 const loginRoute = require('./login');
 const logoutRoute = require('./logout');
-const sugar = require('hapi-auth-cookie');
 const tokenRoute = require('./token');
-const uuid = require('uuid/v4');
 
 const DEFAULT_TIMEOUT = 2 * 60; // 2h in minutes
 const ALGORITHM = 'RS256';
@@ -72,7 +72,7 @@ exports.register = (server, options, next) => {
         }
 
         if (scmContext) {
-            const scm = server.root.app.userFactory.scm;
+            const { scm } = server.root.app.userFactory;
             const scmDisplayName = scm.getDisplayName({ scmContext });
             const userDisplayName = `${scmDisplayName}:${username}`;
 
@@ -93,13 +93,11 @@ exports.register = (server, options, next) => {
      * @param  {Integer} buildTimeout   JWT Expires time (must be minutes)
      * @return {String}                 Signed jwt that includes that profile
      */
-    server.expose('generateToken', (profile, buildTimeout = DEFAULT_TIMEOUT) =>
-        jwt.sign(profile, pluginOptions.jwtPrivateKey, {
-            algorithm: ALGORITHM,
-            expiresIn: buildTimeout * 60, // must be in second
-            jwtid: uuid()
-        })
-    );
+    server.expose('generateToken', (profile, buildTimeout = DEFAULT_TIMEOUT) => jwt.sign(profile, pluginOptions.jwtPrivateKey, {
+        algorithm: ALGORITHM,
+        expiresIn: buildTimeout * 60, // must be in second
+        jwtid: uuid()
+    }));
 
     return server.register([
         bell, sugar, authToken, authJWT, {
@@ -108,9 +106,9 @@ exports.register = (server, options, next) => {
                 restful: true,
                 skip: request =>
                     // Skip crumb validation when the request is authorized with jwt or the route is under webhooks
-                    !!request.headers.authorization ||
-                    !!request.route.path.includes('/webhooks') ||
-                    !!request.route.path.includes('/auth/')
+                    !!request.headers.authorization
+                    || !!request.route.path.includes('/webhooks')
+                    || !!request.route.path.includes('/auth/')
             }
         }])
         .then(() => pluginOptions.scm.getBellConfiguration())
@@ -158,15 +156,15 @@ exports.register = (server, options, next) => {
                     // Token is an API token
                     // using function syntax makes 'this' the request
                     const request = this;
-                    const tokenFactory = request.server.app.tokenFactory;
-                    const userFactory = request.server.app.userFactory;
-                    const pipelineFactory = request.server.app.pipelineFactory;
+                    const { tokenFactory } = request.server.app;
+                    const { userFactory } = request.server.app;
+                    const { pipelineFactory } = request.server.app;
 
                     return tokenFactory.get({ value: tokenValue })
                         .then((token) => {
                             if (!token) {
                                 return Promise.reject();
-                            } else if (token.userId) {
+                            } if (token.userId) {
                                 // if token has userId then the token is for user
                                 return userFactory.get({ accessToken: tokenValue })
                                     .then((user) => {
@@ -180,7 +178,7 @@ exports.register = (server, options, next) => {
                                             scope: ['user']
                                         };
                                     });
-                            } else if (token.pipelineId) {
+                            } if (token.pipelineId) {
                                 // if token has pipelineId then the token is for pipeline
                                 return pipelineFactory.get({ accessToken: tokenValue })
                                     .then((pipeline) => {

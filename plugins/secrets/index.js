@@ -1,10 +1,10 @@
 'use strict';
 
+const boom = require('boom');
 const createRoute = require('./create');
 const getRoute = require('./get');
 const removeRoute = require('./remove');
 const updateRoute = require('./update');
-const boom = require('boom');
 
 /**
  * Secrets API Plugin
@@ -30,11 +30,11 @@ exports.register = (server, options, next) => {
      * @return {Boolean}
      */
     server.expose('canAccess', (credentials, secret, permission) => {
-        const userFactory = server.root.app.userFactory;
-        const pipelineFactory = server.root.app.pipelineFactory;
-        const username = credentials.username;
-        const scmContext = credentials.scmContext;
-        const scope = credentials.scope;
+        const { userFactory } = server.root.app;
+        const { pipelineFactory } = server.root.app;
+        const { username } = credentials;
+        const { scmContext } = credentials;
+        const { scope } = credentials;
 
         return pipelineFactory.get(secret.pipelineId).then((pipeline) => {
             if (!pipeline) {
@@ -58,8 +58,8 @@ exports.register = (server, options, next) => {
                 });
             }
 
-            if (secret.pipelineId !== credentials.pipelineId &&
-                secret.pipelineId !== credentials.configPipelineId) {
+            if (secret.pipelineId !== credentials.pipelineId
+                && secret.pipelineId !== credentials.configPipelineId) {
                 throw boom.forbidden(`${username} is not allowed to access this secret`);
             }
 

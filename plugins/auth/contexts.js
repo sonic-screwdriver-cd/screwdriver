@@ -17,7 +17,7 @@ module.exports = config => ({
         notes: 'Get all auth contexts',
         tags: ['api', 'auth', 'context'],
         handler: (request, reply) => {
-            const scm = request.server.app.userFactory.scm;
+            const { scm } = request.server.app.userFactory;
             const scmContexts = scm.getScmContexts();
             const contexts = [];
 

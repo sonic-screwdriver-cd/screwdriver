@@ -1,10 +1,10 @@
 'use strict';
 
 const Assert = require('chai').assert;
-const request = require('../support/request');
 const jwt = require('jsonwebtoken');
 const TIMEOUT = 240 * 1000;
 const { defineSupportCode } = require('cucumber');
+const request = require('../support/request');
 
 defineSupportCode(({ Before, Given, Then }) => {
     Before('@auth', function hook() {

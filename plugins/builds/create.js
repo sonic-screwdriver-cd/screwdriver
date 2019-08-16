@@ -21,21 +21,21 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const jobFactory = request.server.app.jobFactory;
-            const buildFactory = request.server.app.buildFactory;
-            const userFactory = request.server.app.userFactory;
-            const eventFactory = request.server.app.eventFactory;
-            const scm = buildFactory.scm;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
-            const meta = request.payload.meta;
+            const { jobFactory } = request.server.app;
+            const { buildFactory } = request.server.app;
+            const { userFactory } = request.server.app;
+            const { eventFactory } = request.server.app;
+            const { scm } = buildFactory;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
+            const { meta } = request.payload;
             const payload = {
                 jobId: request.payload.jobId,
                 apiUri: request.server.info.uri,
                 username,
                 scmContext
             };
-            const isValidToken = request.server.plugins.pipelines.isValidToken;
+            const { isValidToken } = request.server.plugins.pipelines;
 
             if (meta) {
                 payload.meta = meta;

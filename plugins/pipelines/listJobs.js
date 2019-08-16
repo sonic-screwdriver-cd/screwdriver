@@ -22,7 +22,7 @@ module.exports = () => ({
             }
         },
         handler: (request, reply) => {
-            const pipelineFactory = request.server.app.pipelineFactory;
+            const { pipelineFactory } = request.server.app;
             const { page, count, jobName } = request.query;
 
             return pipelineFactory.get(request.params.id)

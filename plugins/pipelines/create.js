@@ -25,8 +25,8 @@ module.exports = () => ({
             const checkoutUrl = helper.formatCheckoutUrl(request.payload.checkoutUrl);
             const rootDir = helper.sanitizeRootDir(request.payload.rootDir);
             const { pipelineFactory, userFactory } = request.server.app;
-            const username = request.auth.credentials.username;
-            const scmContext = request.auth.credentials.scmContext;
+            const { username } = request.auth.credentials;
+            const { scmContext } = request.auth.credentials;
 
             // fetch the user
             return userFactory.get({ username, scmContext })
@@ -71,21 +71,19 @@ module.exports = () => ({
                             return pipelineFactory.create(pipelineConfig);
                         })))
                 // hooray, a pipeline is born!
-                .then(pipeline =>
-                    Promise.all([
-                        pipeline.sync(),
-                        pipeline.addWebhook(`${request.server.info.uri}/v4/webhooks`)
-                    ]).then((results) => {
-                        const location = urlLib.format({
-                            host: request.headers.host,
-                            port: request.headers.port,
-                            protocol: request.server.info.protocol,
-                            pathname: `${request.path}/${pipeline.id}`
-                        });
+                .then(pipeline => Promise.all([
+                    pipeline.sync(),
+                    pipeline.addWebhook(`${request.server.info.uri}/v4/webhooks`)
+                ]).then((results) => {
+                    const location = urlLib.format({
+                        host: request.headers.host,
+                        port: request.headers.port,
+                        protocol: request.server.info.protocol,
+                        pathname: `${request.path}/${pipeline.id}`
+                    });
 
-                        return reply(results[0].toJson()).header('Location', location).code(201);
-                    })
-                )
+                    return reply(results[0].toJson()).header('Location', location).code(201);
+                }))
                 // something broke, respond with error
                 .catch(err => reply(boom.boomify(err)));
         },

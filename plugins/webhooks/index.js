@@ -87,9 +87,10 @@ async function updateAdmins(userFactory, username, scmContext, pipeline) {
  * @param  {String}     config.username         Username
  * @param  {String}     config.scmContext       ScmContext
  */
-async function batchUpdateAdmins({ userFactory, pipelines, username, scmContext }) {
-    await Promise.all(pipelines.map(pipeline =>
-        updateAdmins(userFactory, username, scmContext, pipeline)));
+async function batchUpdateAdmins({
+    userFactory, pipelines, username, scmContext
+}) {
+    await Promise.all(pipelines.map(pipeline => updateAdmins(userFactory, username, scmContext, pipeline)));
 }
 
 /**
@@ -143,8 +144,8 @@ function stopJob({ job, prNum, action }) {
             return Promise.resolve();
         }
 
-        const statusMessage = action === 'Closed' ? `Aborted because PR#${prNum} was closed` :
-            `Aborted because new commit was pushed to PR#${prNum}`;
+        const statusMessage = action === 'Closed' ? `Aborted because PR#${prNum} was closed`
+            : `Aborted because new commit was pushed to PR#${prNum}`;
 
         build.status = 'ABORTED';
         build.statusMessage = statusMessage;
@@ -214,7 +215,9 @@ function resolveChainPR(chainPR, pipeline) {
  * @param  {Boolean}      config.chainPR        Chain PR flag
  * @return {Object}
  */
-function getSkipMessageAndChainPR({ pipeline, prSource, restrictPR, chainPR }) {
+function getSkipMessageAndChainPR({
+    pipeline, prSource, restrictPR, chainPR
+}) {
     const defaultRestrictPR = restrictPR || 'none';
     const restriction = pipeline.annotations[ANNOT_RESTRICT_PR] || defaultRestrictPR;
     const result = {
@@ -223,8 +226,8 @@ function getSkipMessageAndChainPR({ pipeline, prSource, restrictPR, chainPR }) {
 
     // Check for restriction upfront
     if (isRestrictedPR(restriction, prSource)) {
-        result.skipMessage = 'Skipping build since pipeline is configured to restrict ' +
-        `${restriction} and PR is ${prSource}`;
+        result.skipMessage = 'Skipping build since pipeline is configured to restrict '
+        + `${restriction} and PR is ${prSource}`;
     }
 
     return result;
@@ -260,11 +263,9 @@ async function triggeredPipelines(pipelineFactory, scmConfig, branch, type, acti
         }
     });
 
-    pipelinesOnCommitBranch = pipelinesOnCommitBranch.filter(p =>
-        hasChangesUnderRootDir(p, changedFiles));
+    pipelinesOnCommitBranch = pipelinesOnCommitBranch.filter(p => hasChangesUnderRootDir(p, changedFiles));
 
-    pipelinesOnOtherBranch = pipelinesOnOtherBranch.filter(p =>
-        hasTriggeredJob(p, determineStartFrom(action, type, branch, null)));
+    pipelinesOnOtherBranch = pipelinesOnOtherBranch.filter(p => hasTriggeredJob(p, determineStartFrom(action, type, branch, null)));
 
     return pipelinesOnCommitBranch.concat(pipelinesOnOtherBranch);
 }
@@ -289,11 +290,13 @@ async function triggeredPipelines(pipelineFactory, scmConfig, branch, type, acti
  * @return {Promise}
  */
 async function createPREvents(options, request) {
-    const { username, scmConfig, sha, prRef, prNum, pipelines,
-        prTitle, changedFiles, branch, action, prSource, restrictPR, chainPR } = options;
-    const scm = request.server.app.pipelineFactory.scm;
-    const eventFactory = request.server.app.eventFactory;
-    const pipelineFactory = request.server.app.pipelineFactory;
+    const {
+        username, scmConfig, sha, prRef, prNum, pipelines,
+        prTitle, changedFiles, branch, action, prSource, restrictPR, chainPR
+    } = options;
+    const { scm } = request.server.app.pipelineFactory;
+    const { eventFactory } = request.server.app;
+    const { pipelineFactory } = request.server.app;
     const scmDisplayName = scm.getDisplayName({ scmContext: scmConfig.scmContext });
     const userDisplayName = `${scmDisplayName}:${username}`;
     const events = [];
@@ -356,7 +359,9 @@ async function createPREvents(options, request) {
  * @param  {String}     config.action       Event action
  * @param  {String}     config.name         Prefix of the PR job name: PR-prNum
  */
-async function batchStopJobs({ pipelines, prNum, action, name }) {
+async function batchStopJobs({
+    pipelines, prNum, action, name
+}) {
     const prJobs = await Promise.all(pipelines.map(p => p.getJobs({ type: 'pr' })
         .then(jobs => jobs.filter(j => j.name.includes(name)))));
     const flatPRJobs = prJobs.reduce((prev, curr) => prev.concat(curr));
@@ -409,7 +414,9 @@ async function pullRequestOpened(options, request, reply) {
  * @param  {Hapi.reply}   reply                     Reply to user
  */
 async function pullRequestClosed(options, request, reply) {
-    const { pipelines, hookId, name, prNum, action } = options;
+    const {
+        pipelines, hookId, name, prNum, action
+    } = options;
     const updatePRJobs = (job => stopJob({ job, prNum, action })
         .then(() => request.log(['webhook', hookId, job.id], `${job.name} stopped`))
         .then(() => {
@@ -450,9 +457,13 @@ async function pullRequestClosed(options, request, reply) {
  * @param  {Hapi.reply}   reply                 Reply to user
  */
 async function pullRequestSync(options, request, reply) {
-    const { pipelines, hookId, name, prNum, action } = options;
+    const {
+        pipelines, hookId, name, prNum, action
+    } = options;
 
-    await batchStopJobs({ pipelines, name, prNum, action });
+    await batchStopJobs({
+        pipelines, name, prNum, action
+    });
 
     request.log(['webhook', hookId], `Job(s) for ${name} stopped`);
 
@@ -513,10 +524,12 @@ async function obtainScmToken(pluginOptions, userFactory, username, scmContext) 
  * @param  {Object}             parsed
  */
 function pullRequestEvent(pluginOptions, request, reply, parsed, token) {
-    const pipelineFactory = request.server.app.pipelineFactory;
-    const userFactory = request.server.app.userFactory;
-    const { hookId, action, checkoutUrl, branch, sha, prNum, prTitle, prRef,
-        prSource, username, scmContext, changedFiles, type } = parsed;
+    const { pipelineFactory } = request.server.app;
+    const { userFactory } = request.server.app;
+    const {
+        hookId, action, checkoutUrl, branch, sha, prNum, prTitle, prRef,
+        prSource, username, scmContext, changedFiles, type
+    } = parsed;
     const fullCheckoutUrl = `${checkoutUrl}#${branch}`;
     const scmConfig = {
         scmUri: '',
@@ -537,8 +550,8 @@ function pullRequestEvent(pluginOptions, request, reply, parsed, token) {
         return triggeredPipelines(pipelineFactory, scmConfig, branch, type, action, changedFiles);
     }).then(async (pipelines) => {
         if (!pipelines || pipelines.length === 0) {
-            const message = 'Skipping since Pipeline triggered by PRs ' +
-                `against ${fullCheckoutUrl} does not exist`;
+            const message = 'Skipping since Pipeline triggered by PRs '
+                + `against ${fullCheckoutUrl} does not exist`;
 
             request.log(['webhook', hookId], message);
 
@@ -564,7 +577,9 @@ function pullRequestEvent(pluginOptions, request, reply, parsed, token) {
             pipelines
         };
 
-        await batchUpdateAdmins({ userFactory, pipelines, username, scmContext });
+        await batchUpdateAdmins({
+            userFactory, pipelines, username, scmContext
+        });
 
         switch (action) {
         case 'opened':
@@ -589,7 +604,9 @@ function pullRequestEvent(pluginOptions, request, reply, parsed, token) {
  * @returns {Object}            Metadata
  */
 function createMeta(parsed) {
-    const { action, ref, releaseId, releaseName, releaseAuthor } = parsed;
+    const {
+        action, ref, releaseId, releaseName, releaseAuthor
+    } = parsed;
 
     if (action === 'release') {
         return {
@@ -604,7 +621,7 @@ function createMeta(parsed) {
                 }
             }
         };
-    } else if (action === 'tag') {
+    } if (action === 'tag') {
         return {
             sd: {
                 tag: {
@@ -630,7 +647,9 @@ function createMeta(parsed) {
  */
 async function createEvents(eventFactory, userFactory, pipelineFactory,
     pipelines, parsed, skipMessage) {
-    const { action, branch, sha, username, scmContext, changedFiles, type } = parsed;
+    const {
+        action, branch, sha, username, scmContext, changedFiles, type
+    } = parsed;
     const events = [];
     const meta = createMeta(parsed);
 
@@ -698,10 +717,12 @@ async function createEvents(eventFactory, userFactory, pipelineFactory,
  * @param  {String}             [skipMessage]          Message to skip starting builds
  */
 async function pushEvent(pluginOptions, request, reply, parsed, skipMessage, token) {
-    const eventFactory = request.server.app.eventFactory;
-    const pipelineFactory = request.server.app.pipelineFactory;
-    const userFactory = request.server.app.userFactory;
-    const { hookId, checkoutUrl, branch, scmContext, type, action, changedFiles } = parsed;
+    const { eventFactory } = request.server.app;
+    const { pipelineFactory } = request.server.app;
+    const { userFactory } = request.server.app;
+    const {
+        hookId, checkoutUrl, branch, scmContext, type, action, changedFiles
+    } = parsed;
     const fullCheckoutUrl = `${checkoutUrl}#${branch}`;
     const scmConfig = {
         scmUri: '',
@@ -760,7 +781,9 @@ async function pushEvent(pluginOptions, request, reply, parsed, skipMessage, tok
  * @param    {String}     scmContext       Scm which pipeline's repository exists in
  * @returns  {Promise}                     Specific SHA1 commit to start the build with
  */
-async function getCommitRefSha({ scm, token, ref, checkoutUrl, scmContext }) {
+async function getCommitRefSha({
+    scm, token, ref, checkoutUrl, scmContext
+}) {
     // For example, git@github.com:screwdriver-cd/data-schema.git => screwdriver-cd, data-schema
     const owner = CHECKOUT_URL_SCHEMA_REGEXP.exec(checkoutUrl)[2];
     const repo = CHECKOUT_URL_SCHEMA_REGEXP.exec(checkoutUrl)[3];
@@ -791,7 +814,7 @@ async function getCommitRefSha({ scm, token, ref, checkoutUrl, scmContext }) {
  * @param  {Function}   next                    Function to call when done
  */
 exports.register = (server, options, next) => {
-    const scm = server.root.app.pipelineFactory.scm;
+    const { scm } = server.root.app.pipelineFactory;
     const pluginOptions = joi.attempt(options, joi.object().keys({
         username: joi.string().required(),
         ignoreCommitsBy: joi.array().items(joi.string()).optional(),
@@ -811,7 +834,7 @@ exports.register = (server, options, next) => {
                 maxBytes: parseInt(pluginOptions.maxBytes, 10) || DEFAULT_MAX_BYTES
             },
             handler: async (request, reply) => {
-                const userFactory = request.server.app.userFactory;
+                const { userFactory } = request.server.app;
                 const ignoreUser = pluginOptions.ignoreCommitsBy;
                 let message = 'Unable to process this kind of event';
                 let skipMessage;
@@ -824,7 +847,9 @@ exports.register = (server, options, next) => {
                         return reply({ message }).code(204);
                     }
 
-                    const { type, hookId, username, scmContext, ref, checkoutUrl, action } = parsed;
+                    const {
+                        type, hookId, username, scmContext, ref, checkoutUrl, action
+                    } = parsed;
 
                     parsedHookId = hookId;
 
@@ -844,7 +869,8 @@ exports.register = (server, options, next) => {
                     }
 
                     const token = await obtainScmToken(
-                        pluginOptions, userFactory, username, scmContext);
+                        pluginOptions, userFactory, username, scmContext
+                    );
 
                     if (!parsed.sha) {
                         try {
