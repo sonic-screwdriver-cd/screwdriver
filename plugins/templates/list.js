@@ -1,31 +1,38 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const listSchema = joi.array().items(schema.models.template.get).label('List of templates');
-const distinctSchema = joi.string()
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const listSchema = joi
+    .array()
+    .items(schema.models.template.get)
+    .label("List of templates");
+const distinctSchema = joi
+    .string()
     .valid(Object.keys(schema.models.template.base.describe().children))
-    .label('Field to return unique results by');
-const compactSchema = joi.string()
-    .valid(['', 'false', 'true'])
-    .label('Flag to return compact data');
-const namespaceSchema = joi.reach(schema.models.template.base, 'namespace');
-const namespacesSchema = joi.array().items(joi.object().keys({ namespace: namespaceSchema }));
+    .label("Field to return unique results by");
+const compactSchema = joi
+    .string()
+    .valid(["", "false", "true"])
+    .label("Flag to return compact data");
+const namespaceSchema = joi.reach(schema.models.template.base, "namespace");
+const namespacesSchema = joi
+    .array()
+    .items(joi.object().keys({ namespace: namespaceSchema }));
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/templates',
+    method: "GET",
+    path: "/templates",
     config: {
-        description: 'Get templates with pagination',
-        notes: 'Returns all template records',
-        tags: ['api', 'templates'],
+        description: "Get templates with pagination",
+        notes: "Returns all template records",
+        tags: ["api", "templates"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build']
+            strategies: ["token"],
+            scope: ["user", "build"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -58,11 +65,13 @@ module.exports = () => ({
             }
 
             if (search) {
-                let fieldsToSearch = ['name', 'namespace', 'description'];
+                let fieldsToSearch = ["name", "namespace", "description"];
 
                 // Remove from fields to search if namespace is already a param
                 if (config.params && config.params.namespace) {
-                    fieldsToSearch = fieldsToSearch.filter(e => e !== 'namespace');
+                    fieldsToSearch = fieldsToSearch.filter(
+                        e => e !== "namespace"
+                    );
                 }
 
                 config.search = {
@@ -74,10 +83,10 @@ module.exports = () => ({
             }
 
             // check if the call wants compact data
-            if (compact === 'true') {
+            if (compact === "true") {
                 // removing `config` trims most of the bytes
-                config.exclude = ['config'];
-                config.groupBy = ['namespace', 'name'];
+                config.exclude = ["config"];
+                config.groupBy = ["namespace", "name"];
             }
 
             if (page || count) {
@@ -86,7 +95,7 @@ module.exports = () => ({
 
             return factory
                 .list(config)
-                .then((templates) => {
+                .then(templates => {
                     if (config.raw) {
                         return reply(templates);
                     }

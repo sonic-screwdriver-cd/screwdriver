@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const nameSchema = joi.reach(schema.models.buildCluster.base, 'name');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const nameSchema = joi.reach(schema.models.buildCluster.base, "name");
 
 module.exports = () => ({
-    method: 'DELETE',
-    path: '/buildclusters/{name}',
+    method: "DELETE",
+    path: "/buildclusters/{name}",
     config: {
-        description: 'Delete a single build cluster',
-        notes: 'Returns null if successful',
-        tags: ['api', 'buildclusters'],
+        description: "Delete a single build cluster",
+        notes: "Returns null if successful",
+        tags: ["api", "buildclusters"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -34,27 +34,39 @@ module.exports = () => ({
                     }
                 }),
                 userFactory.get({ username, scmContext })
-            ]).then(([buildClusters, user]) => {
-                if (buildClusters.length === 0) {
-                    return reply(boom.notFound(`Build cluster ${name} does not exist`));
-                }
-                if (!user) {
-                    return reply(boom.notFound(`User ${username} does not exist`));
-                }
+            ])
+                .then(([buildClusters, user]) => {
+                    if (buildClusters.length === 0) {
+                        return reply(
+                            boom.notFound(
+                                `Build cluster ${name} does not exist`
+                            )
+                        );
+                    }
+                    if (!user) {
+                        return reply(
+                            boom.notFound(`User ${username} does not exist`)
+                        );
+                    }
 
-                const adminDetails = request.server.plugins.banners
-                    .screwdriverAdminDetails(username, scmContext);
+                    const adminDetails = request.server.plugins.banners.screwdriverAdminDetails(
+                        username,
+                        scmContext
+                    );
 
-                if (!adminDetails.isAdmin) {
-                    return reply(boom.forbidden(
-                        `User ${adminDetails.userDisplayName}
+                    if (!adminDetails.isAdmin) {
+                        return reply(
+                            boom.forbidden(
+                                `User ${adminDetails.userDisplayName}
                         does not have Screwdriver administrative privileges.`
-                    ));
-                }
+                            )
+                        );
+                    }
 
-                return buildClusters[0].remove()
-                    .then(() => reply().code(204));
-            })
+                    return buildClusters[0]
+                        .remove()
+                        .then(() => reply().code(204));
+                })
                 .catch(err => reply(boom.boomify(err)));
         },
         validate: {

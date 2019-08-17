@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
-const infoRoute = require('./info');
-const tokenRoute = require('./token');
+const infoRoute = require("./info");
+const tokenRoute = require("./token");
 
 /**
  * Coverage API Plugin
@@ -22,5 +22,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'coverage'
+    name: "coverage"
 };

@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
-const parser = require('screwdriver-config-parser');
-const schema = require('screwdriver-data-schema');
+const parser = require("screwdriver-config-parser");
+const schema = require("screwdriver-data-schema");
 const validatorSchema = schema.api.validator;
 
 /**
@@ -14,15 +14,18 @@ const validatorSchema = schema.api.validator;
  */
 exports.register = (server, options, next) => {
     server.route({
-        method: 'POST',
-        path: '/validator',
+        method: "POST",
+        path: "/validator",
         config: {
-            description: 'Validate a given screwdriver.yaml',
-            notes: 'Returns the parsed config or validation errors',
-            tags: ['api', 'validation', 'yaml'],
-            handler: (request, reply) => parser(request.payload.yaml, request.server.app.templateFactory,
-                request.server.app.buildClusterFactory)
-                .then(pipeline => reply(pipeline)),
+            description: "Validate a given screwdriver.yaml",
+            notes: "Returns the parsed config or validation errors",
+            tags: ["api", "validation", "yaml"],
+            handler: (request, reply) =>
+                parser(
+                    request.payload.yaml,
+                    request.server.app.templateFactory,
+                    request.server.app.buildClusterFactory
+                ).then(pipeline => reply(pipeline)),
             validate: {
                 payload: validatorSchema.input
             },
@@ -35,5 +38,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'validator'
+    name: "validator"
 };

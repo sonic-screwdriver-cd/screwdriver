@@ -1,27 +1,28 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
 const getSchema = schema.models.command.get;
-const namespaceSchema = joi.reach(schema.models.command.base, 'namespace');
-const nameSchema = joi.reach(schema.models.command.base, 'name');
-const versionSchema = joi.reach(schema.models.command.base, 'version');
-const tagSchema = joi.reach(schema.models.commandTag.base, 'tag');
+const namespaceSchema = joi.reach(schema.models.command.base, "namespace");
+const nameSchema = joi.reach(schema.models.command.base, "name");
+const versionSchema = joi.reach(schema.models.command.base, "version");
+const tagSchema = joi.reach(schema.models.commandTag.base, "tag");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/commands/{namespace}/{name}/{versionOrTag}',
+    method: "GET",
+    path: "/commands/{namespace}/{name}/{versionOrTag}",
     config: {
-        description: 'Get a single command given command namespace, name and version or tag',
-        notes: 'Returns a command record',
-        tags: ['api', 'commands'],
+        description:
+            "Get a single command given command namespace, name and version or tag",
+        notes: "Returns a command record",
+        tags: ["api", "commands"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build']
+            strategies: ["token"],
+            scope: ["user", "build"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -29,8 +30,9 @@ module.exports = () => ({
             const { commandFactory } = request.server.app;
             const { namespace, name, versionOrTag } = request.params;
 
-            return commandFactory.getCommand(`${namespace}/${name}@${versionOrTag}`)
-                .then((command) => {
+            return commandFactory
+                .getCommand(`${namespace}/${name}@${versionOrTag}`)
+                .then(command => {
                     if (!command) {
                         throw boom.notFound(
                             `Command ${namespace}/${name}@${versionOrTag} does not exist`
@@ -48,10 +50,7 @@ module.exports = () => ({
             params: {
                 namespace: namespaceSchema,
                 name: nameSchema,
-                versionOrTag: joi.alternatives().try(
-                    versionSchema,
-                    tagSchema
-                )
+                versionOrTag: joi.alternatives().try(versionSchema, tagSchema)
             }
         }
     }

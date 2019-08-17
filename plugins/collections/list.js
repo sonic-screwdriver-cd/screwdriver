@@ -1,22 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const schema = require("screwdriver-data-schema");
 const listSchema = schema.models.collection.list;
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/collections',
+    method: "GET",
+    path: "/collections",
     config: {
-        description: 'Get collections for requesting user',
-        notes: 'Returns all collection records belonging to the requesting user',
-        tags: ['api', 'collections'],
+        description: "Get collections for requesting user",
+        notes:
+            "Returns all collection records belonging to the requesting user",
+        tags: ["api", "collections"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -24,8 +25,9 @@ module.exports = () => ({
             const { userFactory, collectionFactory } = request.server.app;
             const { username, scmContext } = request.auth.credentials;
 
-            return userFactory.get({ username, scmContext })
-                .then((user) => {
+            return userFactory
+                .get({ username, scmContext })
+                .then(user => {
                     if (!user) {
                         throw boom.notFound(`User ${username} does not exist`);
                     }
@@ -36,8 +38,11 @@ module.exports = () => ({
                         }
                     };
 
-                    return collectionFactory.list(config)
-                        .then(collections => reply(collections.map(c => c.toJson())));
+                    return collectionFactory
+                        .list(config)
+                        .then(collections =>
+                            reply(collections.map(c => c.toJson()))
+                        );
                 })
                 .catch(err => reply(boom.boomify(err)));
         },

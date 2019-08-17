@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.pipeline.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.pipeline.base, "id");
 
 module.exports = () => ({
-    method: 'DELETE',
-    path: '/pipelines/{id}/tokens',
+    method: "DELETE",
+    path: "/pipelines/{id}/tokens",
     config: {
-        description: 'Remove all tokens for a specific pipeline',
-        notes: 'Returns null if successful',
-        tags: ['api', 'tokens'],
+        description: "Remove all tokens for a specific pipeline",
+        notes: "Returns null if successful",
+        tags: ["api", "tokens"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -33,21 +33,28 @@ module.exports = () => ({
             ])
                 .then(([pipeline, user]) => {
                     if (!pipeline) {
-                        throw boom.notFound('Pipeline does not exist');
+                        throw boom.notFound("Pipeline does not exist");
                     }
 
                     if (!user) {
-                        throw boom.notFound('User does not exist');
+                        throw boom.notFound("User does not exist");
                     }
 
-                    return user.getPermissions(pipeline.scmUri)
-                        .then((permissions) => {
+                    return user
+                        .getPermissions(pipeline.scmUri)
+                        .then(permissions => {
                             if (!permissions.admin) {
-                                throw boom.forbidden(`User ${username} `
-                                    + 'is not an admin of this repo');
+                                throw boom.forbidden(
+                                    `User ${username} ` +
+                                        "is not an admin of this repo"
+                                );
                             }
                         })
-                        .then(() => pipeline.tokens.then(tokens => tokens.map(t => t.remove())));
+                        .then(() =>
+                            pipeline.tokens.then(tokens =>
+                                tokens.map(t => t.remove())
+                            )
+                        );
                 })
                 .then(() => reply().code(204))
                 .catch(err => reply(boom.boomify(err)));

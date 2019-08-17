@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
 const baseSchema = schema.models.template.base;
 
 module.exports = () => ({
-    method: 'PUT',
-    path: '/templates/{name}/trusted',
+    method: "PUT",
+    path: "/templates/{name}/trusted",
     config: {
         description: "Update a template's trusted property",
-        notes: 'Returns null if successful',
-        tags: ['api', 'templates', 'trusted'],
+        notes: "Returns null if successful",
+        tags: ["api", "templates", "trusted"],
         auth: {
-            strategies: ['token'],
-            scope: ['admin', '!guest']
+            strategies: ["token"],
+            scope: ["admin", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -30,8 +30,8 @@ module.exports = () => ({
             const templates = await templateFactory.list({
                 params: { name },
                 paginate: { count: 1 },
-                sortBy: 'id',
-                sort: 'ascending'
+                sortBy: "id",
+                sort: "ascending"
             });
 
             if (templates.length === 0) {
@@ -42,14 +42,16 @@ module.exports = () => ({
 
             template.trusted = trusted;
 
-            return template.update().then(() => reply().code(204), err => reply(boom.boomify(err)));
+            return template
+                .update()
+                .then(() => reply().code(204), err => reply(boom.boomify(err)));
         },
         validate: {
             params: {
-                name: joi.reach(baseSchema, 'name')
+                name: joi.reach(baseSchema, "name")
             },
             payload: {
-                trusted: joi.reach(baseSchema, 'trusted')
+                trusted: joi.reach(baseSchema, "trusted")
             }
         }
     }

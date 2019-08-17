@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * Logout of Screwdriver API
@@ -6,14 +6,14 @@
  * @return {Object} Hapi Plugin Route
  */
 module.exports = () => ({
-    method: 'POST',
-    path: '/auth/logout',
+    method: "POST",
+    path: "/auth/logout",
     config: {
-        description: 'Logout of screwdriver',
-        notes: 'Clears the cookie used for authentication',
-        tags: ['api', 'auth', 'logout'],
+        description: "Logout of screwdriver",
+        notes: "Clears the cookie used for authentication",
+        tags: ["api", "auth", "logout"],
         auth: {
-            strategies: ['token', 'session']
+            strategies: ["token", "session"]
         },
         handler: (request, reply) => {
             request.cookieAuth.clear();

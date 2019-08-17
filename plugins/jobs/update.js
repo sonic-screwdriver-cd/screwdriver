@@ -1,34 +1,39 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.job.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.job.base, "id");
 
 module.exports = () => ({
-    method: 'PUT',
-    path: '/jobs/{id}',
+    method: "PUT",
+    path: "/jobs/{id}",
     config: {
-        description: 'Update a job',
-        notes: 'Update a specific job',
-        tags: ['api', 'jobs'],
+        description: "Update a job",
+        notes: "Update a specific job",
+        tags: ["api", "jobs"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
         handler: (request, reply) => {
-            const { jobFactory, pipelineFactory, userFactory } = request.server.app;
+            const {
+                jobFactory,
+                pipelineFactory,
+                userFactory
+            } = request.server.app;
             const { id } = request.params;
             const { username } = request.auth.credentials;
             const { scmContext } = request.auth.credentials;
 
-            return jobFactory.get(id)
-                .then((job) => {
+            return jobFactory
+                .get(id)
+                .then(job => {
                     if (!job) {
                         throw boom.notFound(`Job ${id} does not exist`);
                     }
@@ -38,24 +43,31 @@ module.exports = () => ({
                         userFactory.get({ username, scmContext })
                     ]).then(([pipeline, user]) => {
                         if (!pipeline) {
-                            throw boom.notFound('Pipeline does not exist');
+                            throw boom.notFound("Pipeline does not exist");
                         }
 
                         // ask the user for permissions on this repo
-                        return user.getPermissions(pipeline.scmUri)
-                            // check if user has push access
-                            .then((permissions) => {
-                                if (!permissions.push) {
-                                    throw boom.forbidden(`User ${username} `
-                                        + 'does not have write permission for this repo');
-                                }
+                        return (
+                            user
+                                .getPermissions(pipeline.scmUri)
+                                // check if user has push access
+                                .then(permissions => {
+                                    if (!permissions.push) {
+                                        throw boom.forbidden(
+                                            `User ${username} ` +
+                                                "does not have write permission for this repo"
+                                        );
+                                    }
 
-                                Object.keys(request.payload).forEach((key) => {
-                                    job[key] = request.payload[key];
-                                });
+                                    Object.keys(request.payload).forEach(
+                                        key => {
+                                            job[key] = request.payload[key];
+                                        }
+                                    );
 
-                                return job.update();
-                            });
+                                    return job.update();
+                                })
+                        );
                     });
                 })
                 .then(job => reply(job.toJson()).code(200))

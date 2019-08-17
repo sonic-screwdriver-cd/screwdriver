@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 
-const Assert = require('chai').assert;
-const octokitRest = require('@octokit/rest');
+const Assert = require("chai").assert;
+const octokitRest = require("@octokit/rest");
 const octokit = octokitRest({
     baseUrl: [
-        `https://${process.env.TEST_SCM_HOSTNAME || 'api.github.com'}`,
-        `${process.env.TEST_SCM_HOSTNAME ? '/api/v3' : ''}`
-    ].join(''),
+        `https://${process.env.TEST_SCM_HOSTNAME || "api.github.com"}`,
+        `${process.env.TEST_SCM_HOSTNAME ? "/api/v3" : ""}`
+    ].join(""),
     auth: process.env.GIT_TOKEN
 });
 
@@ -20,11 +20,14 @@ const MAX_FILENAME_LENGTH = 17;
  * @return {String}                   A string consisting of random characters
  */
 function randomString(stringLength) {
-    let content = '';
-    const alphanumeric = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let content = "";
+    const alphanumeric =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     for (let i = 0; i < stringLength; i += 1) {
-        content += alphanumeric.charAt(Math.floor(Math.random() * alphanumeric.length));
+        content += alphanumeric.charAt(
+            Math.floor(Math.random() * alphanumeric.length)
+        );
     }
 
     return content;
@@ -45,7 +48,8 @@ function cleanUpRepository(branch, repoOwner, repoName) {
         ref: `heads/${branch}`
     };
 
-    return octokit.git.getRef(branchParams)
+    return octokit.git
+        .getRef(branchParams)
         .then(() => octokit.git.deleteRef(branchParams), () => {});
 }
 
@@ -62,7 +66,7 @@ function closePullRequest(repoOwner, repoName, prNumber) {
         owner: repoOwner,
         repo: repoName,
         pull_number: prNumber,
-        state: 'closed'
+        state: "closed"
     });
 }
 
@@ -75,16 +79,17 @@ function closePullRequest(repoOwner, repoName, prNumber) {
  * @return {Promise}
  */
 function createBranch(branch, repoOwner, repoName) {
-    const owner = repoOwner || 'screwdriver-cd-test';
-    const repo = repoName || 'functional-git';
+    const owner = repoOwner || "screwdriver-cd-test";
+    const repo = repoName || "functional-git";
 
     // Create a branch from the tip of the master branch
-    return octokit.git.getRef({
-        owner,
-        repo,
-        ref: 'heads/master'
-    })
-        .then((referenceData) => {
+    return octokit.git
+        .getRef({
+            owner,
+            repo,
+            ref: "heads/master"
+        })
+        .then(referenceData => {
             const { sha } = referenceData.data.object;
 
             return octokit.git.createRef({
@@ -94,7 +99,7 @@ function createBranch(branch, repoOwner, repoName) {
                 sha
             });
         })
-        .catch((err) => {
+        .catch(err => {
             // throws an error if a branch already exists, so this is fine
             Assert.strictEqual(err.status, 422);
         });
@@ -111,15 +116,15 @@ function createBranch(branch, repoOwner, repoName) {
 function createFile(branch, repoOwner, repoName) {
     const content = new Buffer(randomString(MAX_CONTENT_LENGTH));
     const filename = randomString(MAX_FILENAME_LENGTH);
-    const owner = repoOwner || 'screwdriver-cd-test';
-    const repo = repoName || 'functional-git';
+    const owner = repoOwner || "screwdriver-cd-test";
+    const repo = repoName || "functional-git";
 
     return octokit.repos.createOrUpdateFile({
         owner,
         repo,
         path: `testfiles/${filename}`,
-        message: (new Date()).toString(), // commit message is the current time
-        content: content.toString('base64'), // content needs to be transmitted in base64
+        message: new Date().toString(), // commit message is the current time
+        content: content.toString("base64"), // content needs to be transmitted in base64
         branch
     });
 }
@@ -136,9 +141,9 @@ function createPullRequest(branch, repoOwner, repoName) {
     return octokit.pulls.create({
         owner: repoOwner,
         repo: repoName,
-        title: '[DNM] testing',
+        title: "[DNM] testing",
         head: branch,
-        base: 'master'
+        base: "master"
     });
 }
 

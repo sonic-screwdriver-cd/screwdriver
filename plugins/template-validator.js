@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const schema = require("screwdriver-data-schema");
 const templateSchema = schema.api.templateValidator;
-const validator = require('screwdriver-template-validator');
+const validator = require("screwdriver-template-validator");
 
 /**
  * Hapi Template Validator Plugin
@@ -16,17 +16,18 @@ const validator = require('screwdriver-template-validator');
  */
 exports.register = (server, options, next) => {
     server.route({
-        method: 'POST',
-        path: '/validator/template',
+        method: "POST",
+        path: "/validator/template",
         config: {
-            description: 'Validate a given sd-template.yaml',
-            notes: 'returns the parsed config, validation errors, or both',
-            tags: ['api', 'validation', 'yaml'],
+            description: "Validate a given sd-template.yaml",
+            notes: "returns the parsed config, validation errors, or both",
+            tags: ["api", "validation", "yaml"],
             handler: (request, reply) => {
                 const templateString = request.payload.yaml;
 
-                return validator(templateString)
-                    .then(reply, err => reply(boom.badRequest(err.toString())));
+                return validator(templateString).then(reply, err =>
+                    reply(boom.badRequest(err.toString()))
+                );
             },
             validate: {
                 payload: templateSchema.input
@@ -41,5 +42,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'template-validator'
+    name: "template-validator"
 };

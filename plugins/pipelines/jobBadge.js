@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const tinytim = require('tinytim');
-const idSchema = joi.reach(schema.models.pipeline.base, 'id');
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const tinytim = require("tinytim");
+const idSchema = joi.reach(schema.models.pipeline.base, "id");
 
 /**
  * Generate Badge URL
@@ -16,10 +16,14 @@ const idSchema = joi.reach(schema.models.pipeline.base, 'id');
  * @return {String}
  */
 function getUrl({
-    badgeService, statusColor, encodeBadgeSubject, builds = [], subject = 'job'
+    badgeService,
+    statusColor,
+    encodeBadgeSubject,
+    builds = [],
+    subject = "job"
 }) {
-    let color = 'lightgrey';
-    let status = 'unknown';
+    let color = "lightgrey";
+    let status = "unknown";
 
     if (builds.length > 0) {
         status = builds[0].status.toLowerCase();
@@ -34,12 +38,12 @@ function getUrl({
 }
 
 module.exports = config => ({
-    method: 'GET',
-    path: '/pipelines/{id}/{jobName}/badge',
+    method: "GET",
+    path: "/pipelines/{id}/{jobName}/badge",
     config: {
-        description: 'Get a badge for a job',
-        notes: 'Redirects to the badge service',
-        tags: ['api', 'job', 'badge'],
+        description: "Get a badge for a job",
+        notes: "Redirects to the badge service",
+        tags: ["api", "job", "badge"],
         handler: (request, reply) => {
             const { jobFactory } = request.server.app;
             const { pipelineFactory } = request.server.app;
@@ -59,44 +63,51 @@ module.exports = config => ({
                     name: jobName
                 }),
                 pipelineFactory.get(id)
-            ]).then(([job, pipeline]) => {
-                if (!job) {
-                    return reply.redirect(getUrl(badgeConfig));
-                }
-
-                if (job.state === 'DISABLED') {
-                    return reply.redirect(getUrl(Object.assign(
-                        badgeConfig,
-                        {
-                            builds: [{
-                                status: 'DISABLED'
-                            }],
-                            subject: `${pipeline.name}:${jobName}`
-                        }
-                    )));
-                }
-
-                const listConfig = {
-                    paginate: {
-                        page: 1,
-                        count: 1
+            ])
+                .then(([job, pipeline]) => {
+                    if (!job) {
+                        return reply.redirect(getUrl(badgeConfig));
                     }
-                };
 
-                return job.getBuilds(listConfig)
-                    .then(builds => reply.redirect(getUrl(Object.assign(
-                        badgeConfig,
-                        {
-                            builds,
-                            subject: `${pipeline.name}:${jobName}`
+                    if (job.state === "DISABLED") {
+                        return reply.redirect(
+                            getUrl(
+                                Object.assign(badgeConfig, {
+                                    builds: [
+                                        {
+                                            status: "DISABLED"
+                                        }
+                                    ],
+                                    subject: `${pipeline.name}:${jobName}`
+                                })
+                            )
+                        );
+                    }
+
+                    const listConfig = {
+                        paginate: {
+                            page: 1,
+                            count: 1
                         }
-                    ))));
-            }).catch(() => reply.redirect(getUrl(badgeConfig)));
+                    };
+
+                    return job.getBuilds(listConfig).then(builds =>
+                        reply.redirect(
+                            getUrl(
+                                Object.assign(badgeConfig, {
+                                    builds,
+                                    subject: `${pipeline.name}:${jobName}`
+                                })
+                            )
+                        )
+                    );
+                })
+                .catch(() => reply.redirect(getUrl(badgeConfig)));
         },
         validate: {
             params: {
                 id: idSchema,
-                jobName: joi.reach(schema.models.job.base, 'name')
+                jobName: joi.reach(schema.models.job.base, "name")
             }
         }
     }

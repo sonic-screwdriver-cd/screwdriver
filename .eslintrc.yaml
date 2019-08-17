@@ -1,4 +1,6 @@
-extends: screwdriver
+extends:
+    - "screwdriver"
+    - "plugin:prettier/recommended"  # last one wins
 rules:
     max-lines-per-function: "warn"
     complexity: "warn"

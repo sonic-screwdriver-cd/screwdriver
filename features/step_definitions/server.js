@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-const request = require('request');
-const Assert = require('chai').assert;
-const { defineSupportCode } = require('cucumber');
+const request = require("request");
+const Assert = require("chai").assert;
+const { defineSupportCode } = require("cucumber");
 
 defineSupportCode(({ Given, When, Then }) => {
     Given(/^a running API server$/, next => next());
@@ -22,20 +22,20 @@ defineSupportCode(({ Given, When, Then }) => {
     });
 
     Then(/^I should get an OK response$/, function step(callback) {
-        Assert.equal(this.body, 'OK');
+        Assert.equal(this.body, "OK");
         callback(null);
     });
 
     Then(/^I should get a list of versions$/, function step(callback) {
-        Assert.property(this.body, 'versions');
-        Assert.property(this.body, 'licenses');
+        Assert.property(this.body, "versions");
+        Assert.property(this.body, "licenses");
         Assert.isAbove(this.body.licenses.length, 0);
 
         const sampleLicense = this.body.licenses.pop();
 
-        Assert.property(sampleLicense, 'name');
-        Assert.property(sampleLicense, 'repository');
-        Assert.property(sampleLicense, 'licenses');
+        Assert.property(sampleLicense, "name");
+        Assert.property(sampleLicense, "repository");
+        Assert.property(sampleLicense, "licenses");
         callback(null);
     });
 });

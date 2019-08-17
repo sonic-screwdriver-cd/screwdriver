@@ -1,24 +1,24 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const tokenIdSchema = joi.reach(schema.models.token.base, 'id');
-const pipelineIdSchema = joi.reach(schema.models.pipeline.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const tokenIdSchema = joi.reach(schema.models.token.base, "id");
+const pipelineIdSchema = joi.reach(schema.models.pipeline.base, "id");
 
 module.exports = () => ({
-    method: 'PUT',
-    path: '/pipelines/{pipelineId}/tokens/{tokenId}',
+    method: "PUT",
+    path: "/pipelines/{pipelineId}/tokens/{tokenId}",
     config: {
-        description: 'Update a token for pipeline',
-        notes: 'Update a specific token for pipeline',
-        tags: ['api', 'tokens'],
+        description: "Update a token for pipeline",
+        notes: "Update a specific token for pipeline",
+        tags: ["api", "tokens"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -36,48 +36,64 @@ module.exports = () => ({
             ])
                 .then(([token, pipeline, user]) => {
                     if (!token) {
-                        throw boom.notFound('Token does not exist');
+                        throw boom.notFound("Token does not exist");
                     }
 
                     if (!pipeline) {
-                        throw boom.notFound('Pipeline does not exist');
+                        throw boom.notFound("Pipeline does not exist");
                     }
 
                     if (!user) {
-                        throw boom.notFound('User does not exist');
+                        throw boom.notFound("User does not exist");
                     }
 
-                    return user.getPermissions(pipeline.scmUri).then((permissions) => {
-                        if (!permissions.admin) {
-                            throw boom.forbidden(`User ${username} `
-                                + 'is not an admin of this repo');
-                        }
-
-                        return Promise.resolve();
-                    }).then(() => {
-                        if (token.pipelineId !== pipeline.id) {
-                            throw boom.forbidden('Pipeline does not own token');
-                        }
-
-                        return pipeline.tokens
-                            .then((tokens) => {
-                                // Make sure it won't cause a name conflict
-                                const match = tokens && tokens.find(
-                                    t => t.name === request.payload.name
+                    return user
+                        .getPermissions(pipeline.scmUri)
+                        .then(permissions => {
+                            if (!permissions.admin) {
+                                throw boom.forbidden(
+                                    `User ${username} ` +
+                                        "is not an admin of this repo"
                                 );
+                            }
 
-                                if (match && request.params.tokenId !== match.id) {
-                                    throw boom.conflict(`Token ${match.name} already exists`);
+                            return Promise.resolve();
+                        })
+                        .then(() => {
+                            if (token.pipelineId !== pipeline.id) {
+                                throw boom.forbidden(
+                                    "Pipeline does not own token"
+                                );
+                            }
+
+                            return pipeline.tokens.then(tokens => {
+                                // Make sure it won't cause a name conflict
+                                const match =
+                                    tokens &&
+                                    tokens.find(
+                                        t => t.name === request.payload.name
+                                    );
+
+                                if (
+                                    match &&
+                                    request.params.tokenId !== match.id
+                                ) {
+                                    throw boom.conflict(
+                                        `Token ${match.name} already exists`
+                                    );
                                 }
 
-                                Object.keys(request.payload).forEach((key) => {
+                                Object.keys(request.payload).forEach(key => {
                                     token[key] = request.payload[key];
                                 });
 
-                                return token.update()
-                                    .then(() => reply(token.toJson()).code(200));
+                                return token
+                                    .update()
+                                    .then(() =>
+                                        reply(token.toJson()).code(200)
+                                    );
                             });
-                    });
+                        });
                 })
                 .catch(err => reply(boom.boomify(err)));
         },

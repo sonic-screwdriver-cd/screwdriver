@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
 const getSchema = joi.array().items(schema.models.token.get);
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/tokens',
+    method: "GET",
+    path: "/tokens",
     config: {
-        description: 'Get tokens with pagination',
-        notes: 'Returns all token records belonging to the current user',
-        tags: ['api', 'tokens'],
+        description: "Get tokens with pagination",
+        notes: "Returns all token records belonging to the current user",
+        tags: ["api", "tokens"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -26,22 +26,27 @@ module.exports = () => ({
             const { username } = request.auth.credentials;
             const { scmContext } = request.auth.credentials;
 
-            return userFactory.get({ username, scmContext })
-                .then((user) => {
+            return userFactory
+                .get({ username, scmContext })
+                .then(user => {
                     if (!user) {
                         throw boom.notFound(`User ${username} does not exist`);
                     }
 
                     return user.tokens;
                 })
-                .then(tokens => reply(tokens.map((token) => {
-                    const output = token.toJson();
+                .then(tokens =>
+                    reply(
+                        tokens.map(token => {
+                            const output = token.toJson();
 
-                    delete output.userId;
-                    delete output.pipelineId;
+                            delete output.userId;
+                            delete output.pipelineId;
 
-                    return output;
-                })))
+                            return output;
+                        })
+                    )
+                )
                 .catch(err => reply(boom.boomify(err)));
         },
         response: {

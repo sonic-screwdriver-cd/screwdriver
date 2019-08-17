@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const schema = require('screwdriver-data-schema');
+const schema = require("screwdriver-data-schema");
 
 /**
  * Display the public key for verifying the JWT
@@ -10,15 +10,16 @@ const schema = require('screwdriver-data-schema');
  * @return {Object}                       Hapi Plugin Route
  */
 module.exports = options => ({
-    method: ['GET'],
-    path: '/auth/key',
+    method: ["GET"],
+    path: "/auth/key",
     config: {
-        description: 'Get jwt public key',
-        notes: 'Public Key for verifying JSON Web Tokens',
-        tags: ['api', 'auth', 'key'],
-        handler: (request, reply) => reply({
-            key: options.jwtPublicKey
-        }),
+        description: "Get jwt public key",
+        notes: "Public Key for verifying JSON Web Tokens",
+        tags: ["api", "auth", "key"],
+        handler: (request, reply) =>
+            reply({
+                key: options.jwtPublicKey
+            }),
         response: {
             schema: schema.api.auth.key
         }

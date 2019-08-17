@@ -1,24 +1,27 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.pipeline.base, 'id');
-const listSchema = joi.array().items(schema.models.pipeline.get).label('List of Pipelines');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.pipeline.base, "id");
+const listSchema = joi
+    .array()
+    .items(schema.models.pipeline.get)
+    .label("List of Pipelines");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/pipelines',
+    method: "GET",
+    path: "/pipelines",
     config: {
-        description: 'Get pipelines with pagination',
-        notes: 'Returns all pipeline records',
-        tags: ['api', 'pipelines'],
+        description: "Get pipelines with pagination",
+        notes: "Returns all pipeline records",
+        tags: ["api", "pipelines"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'pipeline']
+            strategies: ["token"],
+            scope: ["user", "pipeline"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -27,14 +30,15 @@ module.exports = () => ({
             const scmContexts = factory.scm.getScmContexts();
             let pipelineArray = [];
 
-            scmContexts.forEach((scmContext) => {
+            scmContexts.forEach(scmContext => {
                 const config = {
                     params: { scmContext },
                     sort: request.query.sort
                 };
 
                 if (request.query.configPipelineId) {
-                    config.params.configPipelineId = request.query.configPipelineId;
+                    config.params.configPipelineId =
+                        request.query.configPipelineId;
                 }
 
                 if (request.query.sortBy) {
@@ -43,7 +47,7 @@ module.exports = () => ({
 
                 if (request.query.search) {
                     config.search = {
-                        field: 'name',
+                        field: "name",
                         // Do a fuzzy search for name: screwdriver-cd/ui
                         // See https://www.w3schools.com/sql/sql_like.asp for syntax
                         keyword: `%${request.query.search}%`
@@ -71,9 +75,11 @@ module.exports = () => ({
             schema: listSchema
         },
         validate: {
-            query: schema.api.pagination.concat(joi.object({
-                configPipelineId: idSchema
-            }))
+            query: schema.api.pagination.concat(
+                joi.object({
+                    configPipelineId: idSchema
+                })
+            )
         }
     }
 });

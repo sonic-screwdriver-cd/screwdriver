@@ -1,26 +1,27 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
 const getSchema = schema.models.template.get;
-const nameSchema = joi.reach(schema.models.template.base, 'name');
-const versionSchema = joi.reach(schema.models.template.base, 'version');
-const tagSchema = joi.reach(schema.models.templateTag.base, 'tag');
+const nameSchema = joi.reach(schema.models.template.base, "name");
+const versionSchema = joi.reach(schema.models.template.base, "version");
+const tagSchema = joi.reach(schema.models.templateTag.base, "tag");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/templates/{name}/{versionOrTag}',
+    method: "GET",
+    path: "/templates/{name}/{versionOrTag}",
     config: {
-        description: 'Get a single template given template name and version or tag',
-        notes: 'Returns a template record',
-        tags: ['api', 'templates'],
+        description:
+            "Get a single template given template name and version or tag",
+        notes: "Returns a template record",
+        tags: ["api", "templates"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build']
+            strategies: ["token"],
+            scope: ["user", "build"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -28,10 +29,13 @@ module.exports = () => ({
             const { templateFactory } = request.server.app;
             const { name, versionOrTag } = request.params;
 
-            return templateFactory.getTemplate(`${name}@${versionOrTag}`)
-                .then((template) => {
+            return templateFactory
+                .getTemplate(`${name}@${versionOrTag}`)
+                .then(template => {
                     if (!template) {
-                        throw boom.notFound(`Template ${name}@${versionOrTag} does not exist`);
+                        throw boom.notFound(
+                            `Template ${name}@${versionOrTag} does not exist`
+                        );
                     }
 
                     return reply(template);
@@ -44,10 +48,7 @@ module.exports = () => ({
         validate: {
             params: {
                 name: nameSchema,
-                versionOrTag: joi.alternatives().try(
-                    versionSchema,
-                    tagSchema
-                )
+                versionOrTag: joi.alternatives().try(versionSchema, tagSchema)
             }
         }
     }

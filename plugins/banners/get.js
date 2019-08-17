@@ -1,24 +1,25 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
 const getSchema = schema.models.banner.get;
-const idSchema = joi.reach(schema.models.banner.base, 'id');
+const idSchema = joi.reach(schema.models.banner.base, "id");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/banners/{id}',
+    method: "GET",
+    path: "/banners/{id}",
     config: {
-        description: 'Get a single banner',
-        notes: 'Return a banner record',
-        tags: ['api', 'banners'],
+        description: "Get a single banner",
+        notes: "Return a banner record",
+        tags: ["api", "banners"],
         handler: (request, reply) => {
             const { bannerFactory } = request.server.app;
             const { id } = request.params;
 
-            return bannerFactory.get(id)
-                .then((banner) => {
+            return bannerFactory
+                .get(id)
+                .then(banner => {
                     if (!banner) {
                         throw boom.notFound(`Banner ${id} does not exist`);
                     }

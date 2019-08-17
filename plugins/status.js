@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const schema = require('screwdriver-data-schema');
+const schema = require("screwdriver-data-schema");
 
 /**
  * Hapi interface for plugin to set up status endpoint (see Hapi docs)
@@ -12,13 +12,13 @@ const schema = require('screwdriver-data-schema');
 exports.register = (server, options, next) => {
     // Add the status route
     server.route({
-        method: 'GET',
-        path: '/status',
-        handler: (request, reply) => reply('OK'),
+        method: "GET",
+        path: "/status",
+        handler: (request, reply) => reply("OK"),
         config: {
-            description: 'API status',
-            notes: 'Should respond with 200: ok',
-            tags: ['api'],
+            description: "API status",
+            notes: "Should respond with 200: ok",
+            tags: ["api"],
             response: {
                 schema: schema.api.status
             }
@@ -28,6 +28,6 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'server status',
-    version: '1.0.0'
+    name: "server status",
+    version: "1.0.0"
 };

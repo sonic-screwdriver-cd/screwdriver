@@ -1,25 +1,26 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
+const boom = require("boom");
 
 module.exports = config => ({
-    method: 'GET',
-    path: '/coverage/info',
+    method: "GET",
+    path: "/coverage/info",
     config: {
-        description: 'Get coverage metadata',
-        notes: 'Returns object with coverage info',
-        tags: ['api', 'coverage', 'badge'],
+        description: "Get coverage metadata",
+        notes: "Returns object with coverage info",
+        tags: ["api", "coverage", "badge"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build']
+            strategies: ["token"],
+            scope: ["user", "build"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
         handler: (request, reply) => {
-            config.coveragePlugin.getInfo(request.query)
+            config.coveragePlugin
+                .getInfo(request.query)
                 .then(reply)
                 .catch(err => reply(boom.boomify(err)));
         }

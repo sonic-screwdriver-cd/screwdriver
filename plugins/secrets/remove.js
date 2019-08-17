@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.secret.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.secret.base, "id");
 
 module.exports = () => ({
-    method: 'DELETE',
-    path: '/secrets/{id}',
+    method: "DELETE",
+    path: "/secrets/{id}",
     config: {
-        description: 'Remove a single secret',
-        notes: 'Returns null if successful',
-        tags: ['api', 'secrets'],
+        description: "Remove a single secret",
+        notes: "Returns null if successful",
+        tags: ["api", "secrets"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -27,14 +27,15 @@ module.exports = () => ({
             const { canAccess } = request.server.plugins.secrets;
 
             // Get the secret first
-            return secretFactory.get(request.params.id)
-                .then((secret) => {
+            return secretFactory
+                .get(request.params.id)
+                .then(secret => {
                     if (!secret) {
-                        throw boom.notFound('Secret does not exist');
+                        throw boom.notFound("Secret does not exist");
                     }
 
                     // Make sure that user has permission before deleting
-                    return canAccess(credentials, secret, 'admin')
+                    return canAccess(credentials, secret, "admin")
                         .then(() => secret.remove())
                         .then(() => reply().code(204));
                 })

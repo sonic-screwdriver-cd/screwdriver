@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
-const createRoute = require('./create');
-const getRoute = require('./get');
-const listRoute = require('./list');
-const removeRoute = require('./remove');
-const updateRoute = require('./update');
+const createRoute = require("./create");
+const getRoute = require("./get");
+const listRoute = require("./list");
+const removeRoute = require("./remove");
+const updateRoute = require("./update");
 
 /**
  * Build Cluster API Plugin
@@ -26,5 +26,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'buildClusters'
+    name: "buildClusters"
 };

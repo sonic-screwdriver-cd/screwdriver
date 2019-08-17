@@ -1,23 +1,26 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const listSchema = joi.array().items(schema.models.job.get).label('List of jobs');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const listSchema = joi
+    .array()
+    .items(schema.models.job.get)
+    .label("List of jobs");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/pipelines/{id}/jobs',
+    method: "GET",
+    path: "/pipelines/{id}/jobs",
     config: {
-        description: 'Get all jobs for a given pipeline',
-        notes: 'Returns all jobs for a given pipeline',
-        tags: ['api', 'pipelines', 'jobs'],
+        description: "Get all jobs for a given pipeline",
+        notes: "Returns all jobs for a given pipeline",
+        tags: ["api", "pipelines", "jobs"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build', 'pipeline']
+            strategies: ["token"],
+            scope: ["user", "build", "pipeline"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -25,10 +28,11 @@ module.exports = () => ({
             const { pipelineFactory } = request.server.app;
             const { page, count, jobName } = request.query;
 
-            return pipelineFactory.get(request.params.id)
-                .then((pipeline) => {
+            return pipelineFactory
+                .get(request.params.id)
+                .then(pipeline => {
                     if (!pipeline) {
-                        throw boom.notFound('Pipeline does not exist');
+                        throw boom.notFound("Pipeline does not exist");
                     }
 
                     const config = {
@@ -53,10 +57,16 @@ module.exports = () => ({
             schema: listSchema
         },
         validate: {
-            query: schema.api.pagination.concat(joi.object({
-                archived: joi.boolean().truthy('true').falsy('false').default(false),
-                jobName: joi.reach(schema.models.job.base, 'name')
-            }))
+            query: schema.api.pagination.concat(
+                joi.object({
+                    archived: joi
+                        .boolean()
+                        .truthy("true")
+                        .falsy("false")
+                        .default(false),
+                    jobName: joi.reach(schema.models.job.base, "name")
+                })
+            )
         }
     }
 });

@@ -1,33 +1,37 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const listSchema = joi.array().items(schema.models.build.get).label('List of builds');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const listSchema = joi
+    .array()
+    .items(schema.models.build.get)
+    .label("List of builds");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/events/{id}/builds',
+    method: "GET",
+    path: "/events/{id}/builds",
     config: {
-        description: 'Get builds for a given event',
-        notes: 'Returns builds for a given event',
-        tags: ['api', 'events', 'builds'],
+        description: "Get builds for a given event",
+        notes: "Returns builds for a given event",
+        tags: ["api", "events", "builds"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'pipeline']
+            strategies: ["token"],
+            scope: ["user", "pipeline"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
         handler: (request, reply) => {
             const factory = request.server.app.eventFactory;
 
-            return factory.get(request.params.id)
-                .then((event) => {
+            return factory
+                .get(request.params.id)
+                .then(event => {
                     if (!event) {
-                        throw boom.notFound('Event does not exist');
+                        throw boom.notFound("Event does not exist");
                     }
 
                     return event.getBuilds();

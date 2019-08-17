@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const dayjs = require('dayjs');
+const dayjs = require("dayjs");
 
 /**
  * Set default start time and end time
@@ -12,7 +12,11 @@ const dayjs = require('dayjs');
  */
 function setDefaultTimeRange(start, end, maxDay) {
     const endTime = end || new Date().toISOString();
-    const startTime = start || dayjs(endTime).subtract(maxDay, 'days').toISOString();
+    const startTime =
+        start ||
+        dayjs(endTime)
+            .subtract(maxDay, "days")
+            .toISOString();
 
     return { startTime, endTime };
 }
@@ -26,7 +30,7 @@ function setDefaultTimeRange(start, end, maxDay) {
  * @return {Boolean}                True if time range is valid. False otherwise
  */
 function validTimeRange(start, end, maxDay) {
-    const dayDiff = dayjs(end).diff(dayjs(start), 'days');
+    const dayDiff = dayjs(end).diff(dayjs(start), "days");
 
     return dayDiff >= 0 && dayDiff <= maxDay;
 }

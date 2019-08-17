@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const schema = require('screwdriver-data-schema');
+const schema = require("screwdriver-data-schema");
 
 /**
  * Get all auth contexts
@@ -10,18 +10,18 @@ const schema = require('screwdriver-data-schema');
  * @return {Object}                              Hapi Plugin Route
  */
 module.exports = config => ({
-    method: ['GET'],
-    path: '/auth/contexts',
+    method: ["GET"],
+    path: "/auth/contexts",
     config: {
-        description: 'Get all auth contexts',
-        notes: 'Get all auth contexts',
-        tags: ['api', 'auth', 'context'],
+        description: "Get all auth contexts",
+        notes: "Get all auth contexts",
+        tags: ["api", "auth", "context"],
         handler: (request, reply) => {
             const { scm } = request.server.app.userFactory;
             const scmContexts = scm.getScmContexts();
             const contexts = [];
 
-            scmContexts.forEach((scmContext) => {
+            scmContexts.forEach(scmContext => {
                 const context = {
                     context: scmContext,
                     displayName: scm.getDisplayName({ scmContext })
@@ -32,8 +32,8 @@ module.exports = config => ({
 
             if (config.allowGuestAccess) {
                 contexts.push({
-                    context: 'guest',
-                    displayName: 'Guest Access'
+                    context: "guest",
+                    displayName: "Guest Access"
                 });
             }
 

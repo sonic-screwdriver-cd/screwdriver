@@ -1,15 +1,15 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const createRoute = require('./create');
-const createTagRoute = require('./createTag');
-const getRoute = require('./get');
-const listRoute = require('./list');
-const listTagsRoute = require('./listTags');
-const listVersionsRoute = require('./listVersions');
-const removeRoute = require('./remove');
-const removeTagRoute = require('./removeTag');
-const updateTrustedRoute = require('./updateTrusted');
+const boom = require("boom");
+const createRoute = require("./create");
+const createTagRoute = require("./createTag");
+const getRoute = require("./get");
+const listRoute = require("./list");
+const listTagsRoute = require("./listTags");
+const listVersionsRoute = require("./listVersions");
+const removeRoute = require("./remove");
+const removeTagRoute = require("./removeTag");
+const updateTrustedRoute = require("./updateTrusted");
 
 /**
  * Template API Plugin
@@ -32,34 +32,43 @@ exports.register = (server, options, next) => {
      * @param {String}  permission               Required permission level
      * @return {Promise}
      */
-    server.expose('canRemove', (credentials, template, permission) => {
+    server.expose("canRemove", (credentials, template, permission) => {
         const { username, scmContext, scope } = credentials;
         const { userFactory, pipelineFactory } = server.root.app;
 
-        return pipelineFactory.get(template.pipelineId).then((pipeline) => {
+        return pipelineFactory.get(template.pipelineId).then(pipeline => {
             if (!pipeline) {
-                throw boom.notFound(`Pipeline ${template.pipelineId} does not exist`);
+                throw boom.notFound(
+                    `Pipeline ${template.pipelineId} does not exist`
+                );
             }
 
-            if (scope.includes('user')) {
-                return userFactory.get({ username, scmContext }).then((user) => {
+            if (scope.includes("user")) {
+                return userFactory.get({ username, scmContext }).then(user => {
                     if (!user) {
                         throw boom.notFound(`User ${username} does not exist`);
                     }
 
-                    return user.getPermissions(pipeline.scmUri).then((permissions) => {
-                        if (!permissions[permission]) {
-                            throw boom.forbidden(`User ${username} does not have `
-                                + `${permission} access for this template`);
-                        }
+                    return user
+                        .getPermissions(pipeline.scmUri)
+                        .then(permissions => {
+                            if (!permissions[permission]) {
+                                throw boom.forbidden(
+                                    `User ${username} does not have ` +
+                                        `${permission} access for this template`
+                                );
+                            }
 
-                        return true;
-                    });
+                            return true;
+                        });
                 });
             }
 
-            if (template.pipelineId !== credentials.pipelineId || credentials.isPR) {
-                throw boom.forbidden('Not allowed to remove this template');
+            if (
+                template.pipelineId !== credentials.pipelineId ||
+                credentials.isPR
+            ) {
+                throw boom.forbidden("Not allowed to remove this template");
             }
 
             return true;
@@ -82,5 +91,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'templates'
+    name: "templates"
 };

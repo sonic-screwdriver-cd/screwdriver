@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.banner.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.banner.base, "id");
 
 module.exports = () => ({
-    method: 'PUT',
-    path: '/banners/{id}',
+    method: "PUT",
+    path: "/banners/{id}",
     config: {
-        description: 'Update a banner',
-        notes: 'Update a banner',
-        tags: ['api', 'banners'],
+        description: "Update a banner",
+        notes: "Update a banner",
+        tags: ["api", "banners"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -28,28 +28,36 @@ module.exports = () => ({
             const { scmContext } = request.auth.credentials;
 
             // lookup whether user is admin
-            const adminDetails = request.server.plugins.banners
-                .screwdriverAdminDetails(username, scmContext);
+            const adminDetails = request.server.plugins.banners.screwdriverAdminDetails(
+                username,
+                scmContext
+            );
 
             // verify user is authorized to update banners
             // return unauthorized if not system admin
             if (!adminDetails.isAdmin) {
-                return reply(boom.forbidden(
-                    `User ${adminDetails.userDisplayName}
+                return reply(
+                    boom.forbidden(
+                        `User ${adminDetails.userDisplayName}
                     does not have Screwdriver administrative privileges.`
-                ));
+                    )
+                );
             }
 
-            return bannerFactory.get(id)
-                .then((banner) => {
+            return bannerFactory
+                .get(id)
+                .then(banner => {
                     if (!banner) {
                         throw boom.notFound(`Banner ${id} does not exist`);
                     }
 
                     Object.assign(banner, request.payload);
 
-                    return banner.update()
-                        .then(updatedBanner => reply(updatedBanner.toJson()).code(200));
+                    return banner
+                        .update()
+                        .then(updatedBanner =>
+                            reply(updatedBanner.toJson()).code(200)
+                        );
                 })
                 .catch(err => reply(boom.boomify(err)));
         },

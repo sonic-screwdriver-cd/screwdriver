@@ -1,24 +1,24 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const tokenIdSchema = joi.reach(schema.models.token.base, 'id');
-const pipelineIdSchema = joi.reach(schema.models.pipeline.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const tokenIdSchema = joi.reach(schema.models.token.base, "id");
+const pipelineIdSchema = joi.reach(schema.models.pipeline.base, "id");
 
 module.exports = () => ({
-    method: 'DELETE',
-    path: '/pipelines/{pipelineId}/tokens/{tokenId}',
+    method: "DELETE",
+    path: "/pipelines/{pipelineId}/tokens/{tokenId}",
     config: {
-        description: 'Remove a single token for a specific pipeline',
-        notes: 'Returns null if successful',
-        tags: ['api', 'tokens'],
+        description: "Remove a single token for a specific pipeline",
+        notes: "Returns null if successful",
+        tags: ["api", "tokens"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -35,32 +35,42 @@ module.exports = () => ({
             ])
                 .then(([pipeline, user]) => {
                     if (!pipeline) {
-                        throw boom.notFound('Pipeline does not exist');
+                        throw boom.notFound("Pipeline does not exist");
                     }
 
                     if (!user) {
-                        throw boom.notFound('User does not exist');
+                        throw boom.notFound("User does not exist");
                     }
 
-                    return user.getPermissions(pipeline.scmUri)
-                        .then((permissions) => {
+                    return user
+                        .getPermissions(pipeline.scmUri)
+                        .then(permissions => {
                             if (!permissions.admin) {
-                                throw boom.forbidden(`User ${username} `
-                                    + 'is not an admin of this repo');
+                                throw boom.forbidden(
+                                    `User ${username} ` +
+                                        "is not an admin of this repo"
+                                );
                             }
                         })
-                        .then(() => tokenFactory.get(request.params.tokenId)
-                            .then((token) => {
-                                if (!token) {
-                                    throw boom.notFound('Token does not exist');
-                                }
+                        .then(() =>
+                            tokenFactory
+                                .get(request.params.tokenId)
+                                .then(token => {
+                                    if (!token) {
+                                        throw boom.notFound(
+                                            "Token does not exist"
+                                        );
+                                    }
 
-                                if (token.pipelineId !== pipeline.id) {
-                                    throw boom.forbidden('Pipeline does not own token');
-                                }
+                                    if (token.pipelineId !== pipeline.id) {
+                                        throw boom.forbidden(
+                                            "Pipeline does not own token"
+                                        );
+                                    }
 
-                                return token.remove();
-                            }));
+                                    return token.remove();
+                                })
+                        );
                 })
                 .then(() => reply().code(204))
                 .catch(err => reply(boom.boomify(err)));

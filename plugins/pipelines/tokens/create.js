@@ -1,22 +1,22 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const schema = require('screwdriver-data-schema');
-const urlLib = require('url');
+const boom = require("boom");
+const schema = require("screwdriver-data-schema");
+const urlLib = require("url");
 
 module.exports = () => ({
-    method: 'POST',
-    path: '/pipelines/{id}/tokens',
+    method: "POST",
+    path: "/pipelines/{id}/tokens",
     config: {
-        description: 'Create a new token for pipeline',
-        notes: 'Create a specific token for pipeline',
-        tags: ['api', 'tokens'],
+        description: "Create a new token for pipeline",
+        notes: "Create a specific token for pipeline",
+        tags: ["api", "tokens"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -33,7 +33,7 @@ module.exports = () => ({
                 userFactory.get({ username, scmContext })
             ]).then(([pipeline, user]) => {
                 if (!pipeline) {
-                    throw boom.notFound('Pipeline does not exist');
+                    throw boom.notFound("Pipeline does not exist");
                 }
 
                 if (!user) {
@@ -42,31 +42,38 @@ module.exports = () => ({
 
                 // Check the user's permission and make sure the name is unique
                 return Promise.all([
-                    user.getPermissions(pipeline.scmUri).then((permissions) => {
+                    user.getPermissions(pipeline.scmUri).then(permissions => {
                         if (!permissions.admin) {
-                            throw boom.forbidden(`User ${username} `
-                                + 'is not an admin of this repo');
+                            throw boom.forbidden(
+                                `User ${username} ` +
+                                    "is not an admin of this repo"
+                            );
                         }
 
                         return Promise.resolve();
                     }),
-                    pipeline.tokens.then((tokens) => {
-                        const match = tokens
-                            && tokens.find(t => t.name === request.payload.name);
+                    pipeline.tokens.then(tokens => {
+                        const match =
+                            tokens &&
+                            tokens.find(t => t.name === request.payload.name);
 
                         if (match) {
-                            throw boom.conflict(`Token ${match.name} already exists`);
+                            throw boom.conflict(
+                                `Token ${match.name} already exists`
+                            );
                         }
 
                         return Promise.resolve();
                     })
                 ])
-                    .then(() => tokenFactory.create({
-                        name: request.payload.name,
-                        description: request.payload.description,
-                        pipelineId
-                    }))
-                    .then((token) => {
+                    .then(() =>
+                        tokenFactory.create({
+                            name: request.payload.name,
+                            description: request.payload.description,
+                            pipelineId
+                        })
+                    )
+                    .then(token => {
                         const location = urlLib.format({
                             host: request.headers.host,
                             port: request.headers.port,
@@ -74,7 +81,9 @@ module.exports = () => ({
                             pathname: `${request.path}/${token.id}`
                         });
 
-                        return reply(token.toJson()).header('Location', location).code(201);
+                        return reply(token.toJson())
+                            .header("Location", location)
+                            .code(201);
                     })
                     .catch(err => reply(boom.boomify(err)));
             });

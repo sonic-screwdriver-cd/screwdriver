@@ -1,34 +1,35 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
 const getSchema = schema.models.pipeline.get;
-const idSchema = joi.reach(schema.models.pipeline.base, 'id');
+const idSchema = joi.reach(schema.models.pipeline.base, "id");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/pipelines/{id}',
+    method: "GET",
+    path: "/pipelines/{id}",
     config: {
-        description: 'Get a single pipeline',
-        notes: 'Returns a pipeline record',
-        tags: ['api', 'pipelines'],
+        description: "Get a single pipeline",
+        notes: "Returns a pipeline record",
+        tags: ["api", "pipelines"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build', 'pipeline']
+            strategies: ["token"],
+            scope: ["user", "build", "pipeline"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
         handler: (request, reply) => {
             const factory = request.server.app.pipelineFactory;
 
-            return factory.get(request.params.id)
-                .then((pipeline) => {
+            return factory
+                .get(request.params.id)
+                .then(pipeline => {
                     if (!pipeline) {
-                        throw boom.notFound('Pipeline does not exist');
+                        throw boom.notFound("Pipeline does not exist");
                     }
 
                     return reply(pipeline.toJson());

@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
-const getRoute = require('./get');
-const updateRoute = require('./update');
-const listBuildsRoute = require('./listBuilds');
-const lastSuccessfulMeta = require('./lastSuccessfulMeta');
-const metrics = require('./metrics');
+const getRoute = require("./get");
+const updateRoute = require("./update");
+const listBuildsRoute = require("./listBuilds");
+const lastSuccessfulMeta = require("./lastSuccessfulMeta");
+const metrics = require("./metrics");
 
 /**
  * Job API Plugin
@@ -26,5 +26,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'jobs'
+    name: "jobs"
 };

@@ -1,23 +1,26 @@
-'use strict';
+"use strict";
 
-const authJWT = require('hapi-auth-jwt2');
-const authToken = require('hapi-auth-bearer-token');
-const bell = require('bell');
-const crumb = require('crumb');
-const joi = require('joi');
-const jwt = require('jsonwebtoken');
-const sugar = require('hapi-auth-cookie');
-const uuid = require('uuid/v4');
-const contextsRoute = require('./contexts');
-const crumbRoute = require('./crumb');
-const keyRoute = require('./key');
-const loginRoute = require('./login');
-const logoutRoute = require('./logout');
-const tokenRoute = require('./token');
+const authJWT = require("hapi-auth-jwt2");
+const authToken = require("hapi-auth-bearer-token");
+const bell = require("bell");
+const crumb = require("crumb");
+const joi = require("joi");
+const jwt = require("jsonwebtoken");
+const sugar = require("hapi-auth-cookie");
+const uuid = require("uuid/v4");
+const contextsRoute = require("./contexts");
+const crumbRoute = require("./crumb");
+const keyRoute = require("./key");
+const loginRoute = require("./login");
+const logoutRoute = require("./logout");
+const tokenRoute = require("./token");
 
 const DEFAULT_TIMEOUT = 2 * 60; // 2h in minutes
-const ALGORITHM = 'RS256';
-const JOI_BOOLEAN = joi.boolean().truthy('true').falsy('false');
+const ALGORITHM = "RS256";
+const JOI_BOOLEAN = joi
+    .boolean()
+    .truthy("true")
+    .falsy("false");
 
 /**
  * Auth API Plugin
@@ -36,22 +39,42 @@ const JOI_BOOLEAN = joi.boolean().truthy('true').falsy('false');
  * @param  {Function} next                           Function to call when done
  */
 exports.register = (server, options, next) => {
-    const pluginOptions = joi.attempt(options, joi.object().keys({
-        jwtEnvironment: joi.string().default(''),
-        https: JOI_BOOLEAN.required(),
-        cookiePassword: joi.string().min(32).required(),
-        encryptionPassword: joi.string().min(32).required(),
-        hashingPassword: joi.string().min(32).required(),
-        allowGuestAccess: JOI_BOOLEAN.default(false),
-        jwtPrivateKey: joi.string().required(),
-        jwtPublicKey: joi.string().required(),
-        whitelist: joi.array().default([]),
-        admins: joi.array().default([]),
-        scm: joi.object().required(),
-        sessionTimeout: joi.number().integer().positive().default(120),
-        oauthRedirectUri: joi.string().optional(),
-        sameSite: joi.alternatives().try(JOI_BOOLEAN, joi.string()).required()
-    }), 'Invalid config for plugin-auth');
+    const pluginOptions = joi.attempt(
+        options,
+        joi.object().keys({
+            jwtEnvironment: joi.string().default(""),
+            https: JOI_BOOLEAN.required(),
+            cookiePassword: joi
+                .string()
+                .min(32)
+                .required(),
+            encryptionPassword: joi
+                .string()
+                .min(32)
+                .required(),
+            hashingPassword: joi
+                .string()
+                .min(32)
+                .required(),
+            allowGuestAccess: JOI_BOOLEAN.default(false),
+            jwtPrivateKey: joi.string().required(),
+            jwtPublicKey: joi.string().required(),
+            whitelist: joi.array().default([]),
+            admins: joi.array().default([]),
+            scm: joi.object().required(),
+            sessionTimeout: joi
+                .number()
+                .integer()
+                .positive()
+                .default(120),
+            oauthRedirectUri: joi.string().optional(),
+            sameSite: joi
+                .alternatives()
+                .try(JOI_BOOLEAN, joi.string())
+                .required()
+        }),
+        "Invalid config for plugin-auth"
+    );
 
     /**
      * Generates a profile for storage in cookie and jwt
@@ -62,29 +85,39 @@ exports.register = (server, options, next) => {
      * @param  {Object}        metadata   Additonal information to tag along with the login
      * @return {Object}                   The profile to be stored in jwt and/or cookie
      */
-    server.expose('generateProfile', (username, scmContext, scope, metadata) => {
-        const profile = Object.assign({
-            username, scmContext, scope
-        }, metadata || {});
+    server.expose(
+        "generateProfile",
+        (username, scmContext, scope, metadata) => {
+            const profile = Object.assign(
+                {
+                    username,
+                    scmContext,
+                    scope
+                },
+                metadata || {}
+            );
 
-        if (pluginOptions.jwtEnvironment) {
-            profile.environment = pluginOptions.jwtEnvironment;
-        }
-
-        if (scmContext) {
-            const { scm } = server.root.app.userFactory;
-            const scmDisplayName = scm.getDisplayName({ scmContext });
-            const userDisplayName = `${scmDisplayName}:${username}`;
-
-            // Check admin
-            if (pluginOptions.admins.length > 0
-                && pluginOptions.admins.includes(userDisplayName)) {
-                profile.scope.push('admin');
+            if (pluginOptions.jwtEnvironment) {
+                profile.environment = pluginOptions.jwtEnvironment;
             }
-        }
 
-        return profile;
-    });
+            if (scmContext) {
+                const { scm } = server.root.app.userFactory;
+                const scmDisplayName = scm.getDisplayName({ scmContext });
+                const userDisplayName = `${scmDisplayName}:${username}`;
+
+                // Check admin
+                if (
+                    pluginOptions.admins.length > 0 &&
+                    pluginOptions.admins.includes(userDisplayName)
+                ) {
+                    profile.scope.push("admin");
+                }
+            }
+
+            return profile;
+        }
+    );
 
     /**
      * Generates a jwt that is signed and has a lifespan (default:2h)
@@ -93,27 +126,35 @@ exports.register = (server, options, next) => {
      * @param  {Integer} buildTimeout   JWT Expires time (must be minutes)
      * @return {String}                 Signed jwt that includes that profile
      */
-    server.expose('generateToken', (profile, buildTimeout = DEFAULT_TIMEOUT) => jwt.sign(profile, pluginOptions.jwtPrivateKey, {
-        algorithm: ALGORITHM,
-        expiresIn: buildTimeout * 60, // must be in second
-        jwtid: uuid()
-    }));
+    server.expose("generateToken", (profile, buildTimeout = DEFAULT_TIMEOUT) =>
+        jwt.sign(profile, pluginOptions.jwtPrivateKey, {
+            algorithm: ALGORITHM,
+            expiresIn: buildTimeout * 60, // must be in second
+            jwtid: uuid()
+        })
+    );
 
-    return server.register([
-        bell, sugar, authToken, authJWT, {
-            register: crumb,
-            options: {
-                restful: true,
-                skip: request =>
-                    // Skip crumb validation when the request is authorized with jwt or the route is under webhooks
-                    !!request.headers.authorization
-                    || !!request.route.path.includes('/webhooks')
-                    || !!request.route.path.includes('/auth/')
+    return server
+        .register([
+            bell,
+            sugar,
+            authToken,
+            authJWT,
+            {
+                register: crumb,
+                options: {
+                    restful: true,
+                    skip: request =>
+                        // Skip crumb validation when the request is authorized with jwt or the route is under webhooks
+                        !!request.headers.authorization ||
+                        !!request.route.path.includes("/webhooks") ||
+                        !!request.route.path.includes("/auth/")
+                }
             }
-        }])
+        ])
         .then(() => pluginOptions.scm.getBellConfiguration())
-        .then((bellConfigs) => {
-            Object.keys(bellConfigs).forEach((scmContext) => {
+        .then(bellConfigs => {
+            Object.keys(bellConfigs).forEach(scmContext => {
                 const bellConfig = bellConfigs[scmContext];
 
                 bellConfig.password = pluginOptions.cookiePassword;
@@ -125,18 +166,18 @@ exports.register = (server, options, next) => {
                 }
 
                 // The oauth strategy differs between the scm modules
-                server.auth.strategy(`oauth_${scmContext}`, 'bell', bellConfig);
+                server.auth.strategy(`oauth_${scmContext}`, "bell", bellConfig);
             });
 
-            server.auth.strategy('session', 'cookie', {
-                cookie: 'sid',
+            server.auth.strategy("session", "cookie", {
+                cookie: "sid",
                 ttl: pluginOptions.sessionTimeout * 60 * 1000,
                 password: pluginOptions.cookiePassword,
                 isSecure: pluginOptions.https,
                 isSameSite: pluginOptions.sameSite
             });
 
-            server.auth.strategy('token', 'jwt', {
+            server.auth.strategy("token", "jwt", {
                 key: pluginOptions.jwtPublicKey,
                 verifyOptions: {
                     algorithms: [ALGORITHM]
@@ -148,8 +189,8 @@ exports.register = (server, options, next) => {
                 }
             });
 
-            server.auth.strategy('auth_token', 'bearer-access-token', {
-                accessTokenName: 'api_token',
+            server.auth.strategy("auth_token", "bearer-access-token", {
+                accessTokenName: "api_token",
                 allowCookieToken: false,
                 allowQueryToken: true,
                 validateFunc: function _validateFunc(tokenValue, cb) {
@@ -160,14 +201,17 @@ exports.register = (server, options, next) => {
                     const { userFactory } = request.server.app;
                     const { pipelineFactory } = request.server.app;
 
-                    return tokenFactory.get({ value: tokenValue })
-                        .then((token) => {
+                    return tokenFactory
+                        .get({ value: tokenValue })
+                        .then(token => {
                             if (!token) {
                                 return Promise.reject();
-                            } if (token.userId) {
+                            }
+                            if (token.userId) {
                                 // if token has userId then the token is for user
-                                return userFactory.get({ accessToken: tokenValue })
-                                    .then((user) => {
+                                return userFactory
+                                    .get({ accessToken: tokenValue })
+                                    .then(user => {
                                         if (!user) {
                                             return Promise.reject();
                                         }
@@ -175,13 +219,15 @@ exports.register = (server, options, next) => {
                                         return {
                                             username: user.username,
                                             scmContext: user.scmContext,
-                                            scope: ['user']
+                                            scope: ["user"]
                                         };
                                     });
-                            } if (token.pipelineId) {
+                            }
+                            if (token.pipelineId) {
                                 // if token has pipelineId then the token is for pipeline
-                                return pipelineFactory.get({ accessToken: tokenValue })
-                                    .then((pipeline) => {
+                                return pipelineFactory
+                                    .get({ accessToken: tokenValue })
+                                    .then(pipeline => {
                                         if (!pipeline) {
                                             return Promise.reject();
                                         }
@@ -190,33 +236,40 @@ exports.register = (server, options, next) => {
                                             username: admin.username,
                                             scmContext: pipeline.scmContext,
                                             pipelineId: token.pipelineId,
-                                            scope: ['pipeline']
+                                            scope: ["pipeline"]
                                         }));
                                     });
                             }
 
                             return Promise.reject();
                         })
-                        .then((profile) => {
-                            request.log(['auth'], `${profile.username} has logged in via `
-                                        + `${profile.scope[0]} API keys`);
-                            profile.token = server.plugins.auth.generateToken(profile);
+                        .then(profile => {
+                            request.log(
+                                ["auth"],
+                                `${profile.username} has logged in via ` +
+                                    `${profile.scope[0]} API keys`
+                            );
+                            profile.token = server.plugins.auth.generateToken(
+                                profile
+                            );
 
                             return cb(null, true, profile);
                         })
-                        .catch((err) => {
-                            request.log(['auth', 'error'], err);
+                        .catch(err => {
+                            request.log(["auth", "error"], err);
                             cb(null, false, {});
                         });
                 }
             });
-            server.route(loginRoute(server, pluginOptions).concat([
-                logoutRoute(),
-                tokenRoute(),
-                crumbRoute(),
-                keyRoute(pluginOptions),
-                contextsRoute(pluginOptions)
-            ]));
+            server.route(
+                loginRoute(server, pluginOptions).concat([
+                    logoutRoute(),
+                    tokenRoute(),
+                    crumbRoute(),
+                    keyRoute(pluginOptions),
+                    contextsRoute(pluginOptions)
+                ])
+            );
 
             next();
         })
@@ -224,5 +277,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'auth'
+    name: "auth"
 };

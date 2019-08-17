@@ -1,36 +1,40 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const listSchema = joi.array().items(schema.models.event.get).label('List of events');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const listSchema = joi
+    .array()
+    .items(schema.models.event.get)
+    .label("List of events");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/pipelines/{id}/events',
+    method: "GET",
+    path: "/pipelines/{id}/events",
     config: {
-        description: 'Get pipeline type events for this pipeline',
-        notes: 'Returns pipeline events for the given pipeline',
-        tags: ['api', 'pipelines', 'events'],
+        description: "Get pipeline type events for this pipeline",
+        notes: "Returns pipeline events for the given pipeline",
+        tags: ["api", "pipelines", "events"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build', 'pipeline']
+            strategies: ["token"],
+            scope: ["user", "build", "pipeline"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
         handler: (request, reply) => {
             const factory = request.server.app.pipelineFactory;
 
-            return factory.get(request.params.id)
-                .then((pipeline) => {
+            return factory
+                .get(request.params.id)
+                .then(pipeline => {
                     if (!pipeline) {
-                        throw boom.notFound('Pipeline does not exist');
+                        throw boom.notFound("Pipeline does not exist");
                     }
 
-                    const eventType = request.query.type || 'pipeline';
+                    const eventType = request.query.type || "pipeline";
                     const config = { params: { type: eventType } };
 
                     if (request.query.page || request.query.count) {
@@ -41,7 +45,7 @@ module.exports = () => ({
                     }
 
                     if (request.query.prNum) {
-                        config.params.type = 'pr';
+                        config.params.type = "pr";
                         config.params.prNum = request.query.prNum;
                     }
 
@@ -54,10 +58,12 @@ module.exports = () => ({
             schema: listSchema
         },
         validate: {
-            query: schema.api.pagination.concat(joi.object({
-                type: joi.string(),
-                prNum: joi.reach(schema.models.event.base, 'prNum')
-            }))
+            query: schema.api.pagination.concat(
+                joi.object({
+                    type: joi.string(),
+                    prNum: joi.reach(schema.models.event.base, "prNum")
+                })
+            )
         }
     }
 });

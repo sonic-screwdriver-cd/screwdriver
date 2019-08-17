@@ -1,16 +1,16 @@
-'use strict';
+"use strict";
 
-const workflowParser = require('screwdriver-workflow-parser');
-const getRoute = require('./get');
-const updateRoute = require('./update');
-const createRoute = require('./create');
-const stepGetRoute = require('./steps/get');
-const artifactGetRoute = require('./artifacts/get');
-const stepUpdateRoute = require('./steps/update');
-const stepLogsRoute = require('./steps/logs');
-const listSecretsRoute = require('./listSecrets');
-const tokenRoute = require('./token');
-const metricsRoute = require('./metrics');
+const workflowParser = require("screwdriver-workflow-parser");
+const getRoute = require("./get");
+const updateRoute = require("./update");
+const createRoute = require("./create");
+const stepGetRoute = require("./steps/get");
+const artifactGetRoute = require("./artifacts/get");
+const stepUpdateRoute = require("./steps/update");
+const stepLogsRoute = require("./steps/logs");
+const listSecretsRoute = require("./listSecrets");
+const tokenRoute = require("./token");
+const metricsRoute = require("./metrics");
 
 /**
  * Create the build. If config.start is false or not passed in then do not start the job
@@ -28,17 +28,24 @@ const metricsRoute = require('./metrics');
  * @return {Promise}
  */
 async function createBuild({
-    jobFactory, buildFactory, eventFactory, pipelineId,
-    jobName, username, scmContext, build, start
+    jobFactory,
+    buildFactory,
+    eventFactory,
+    pipelineId,
+    jobName,
+    username,
+    scmContext,
+    build,
+    start
 }) {
     const event = await eventFactory.get(build.eventId);
     const job = await jobFactory.get({
         name: jobName,
         pipelineId
     });
-    const prRef = event.pr.ref ? event.pr.ref : '';
+    const prRef = event.pr.ref ? event.pr.ref : "";
 
-    if (job.state === 'ENABLED') {
+    if (job.state === "ENABLED") {
         return buildFactory.create({
             jobId: job.id,
             sha: build.sha,
@@ -63,8 +70,12 @@ async function createBuild({
  * @return {Boolean}                   whether all the jobs in join are successful
  */
 function isJoinDone(joinList, finishedBuilds) {
-    const successBuilds = finishedBuilds.filter(b => b.status === 'SUCCESS').map(b => b.jobId);
-    const successBuildsInJoin = joinList.filter(j => successBuilds.includes(j.id));
+    const successBuilds = finishedBuilds
+        .filter(b => b.status === "SUCCESS")
+        .map(b => b.jobId);
+    const successBuildsInJoin = joinList.filter(j =>
+        successBuilds.includes(j.id)
+    );
 
     return successBuildsInJoin.length === joinList.length;
 }
@@ -78,9 +89,11 @@ function isJoinDone(joinList, finishedBuilds) {
  */
 function noFailureSoFar(joinList, finishedBuilds) {
     const failedBuilds = finishedBuilds
-        .filter(b => b.status === 'FAILURE' || b.status === 'ABORTED')
+        .filter(b => b.status === "FAILURE" || b.status === "ABORTED")
         .map(b => b.jobId);
-    const failedBuildsInJoin = joinList.filter(j => failedBuilds.includes(j.id));
+    const failedBuildsInJoin = joinList.filter(j =>
+        failedBuilds.includes(j.id)
+    );
 
     return failedBuildsInJoin.length === 0;
 }
@@ -94,7 +107,7 @@ function noFailureSoFar(joinList, finishedBuilds) {
  */
 function successBuildsInJoinList(joinList, finishedBuilds) {
     const successBuilds = finishedBuilds
-        .filter(b => b.status === 'SUCCESS')
+        .filter(b => b.status === "SUCCESS")
         .map(b => ({ id: b.id, jobId: b.jobId }));
 
     const joinListJobIds = joinList.map(j => j.id);
@@ -112,51 +125,52 @@ function successBuildsInJoinList(joinList, finishedBuilds) {
  * @param  {String}   config.jobName            jobname for this build
  * @return {Promise}  the newly updated/created build
  */
-function handleNextBuild({
-    buildConfig, joinList, finishedBuilds, jobId
-}) {
-    return Promise.resolve().then(() => {
-        const noFailedBuilds = noFailureSoFar(joinList, finishedBuilds);
-        const nextBuild = finishedBuilds.filter(b => b.jobId === jobId)[0];
+function handleNextBuild({ buildConfig, joinList, finishedBuilds, jobId }) {
+    return Promise.resolve()
+        .then(() => {
+            const noFailedBuilds = noFailureSoFar(joinList, finishedBuilds);
+            const nextBuild = finishedBuilds.filter(b => b.jobId === jobId)[0];
 
-        // If anything failed so far, delete if nextBuild was created previously, or do nothing otherwise
-        // [A B] -> C. A passed -> C created; B failed -> delete C
-        // [A B] -> C. A failed -> C not created; B failed -> do nothing
-        // [A B D] -> C. A passed -> C created; B failed -> delete C; D passed -> do nothing
-        if (!noFailedBuilds) {
-            return nextBuild ? nextBuild.remove() : null;
-        }
+            // If anything failed so far, delete if nextBuild was created previously, or do nothing otherwise
+            // [A B] -> C. A passed -> C created; B failed -> delete C
+            // [A B] -> C. A failed -> C not created; B failed -> do nothing
+            // [A B D] -> C. A passed -> C created; B failed -> delete C; D passed -> do nothing
+            if (!noFailedBuilds) {
+                return nextBuild ? nextBuild.remove() : null;
+            }
 
-        // Get upstream buildIds
-        const successBuildsIds = successBuildsInJoinList(joinList, finishedBuilds)
-            .map(b => b.id);
+            // Get upstream buildIds
+            const successBuildsIds = successBuildsInJoinList(
+                joinList,
+                finishedBuilds
+            ).map(b => b.id);
 
-        buildConfig.parentBuildId = successBuildsIds;
+            buildConfig.parentBuildId = successBuildsIds;
 
-        // If everything successful so far, create or update
-        // [A B] -> C. A passed -> create C
-        // [A B] -> C. A passed -> C created; B passed -> update C
-        if (!nextBuild) {
-            buildConfig.start = false;
+            // If everything successful so far, create or update
+            // [A B] -> C. A passed -> create C
+            // [A B] -> C. A passed -> C created; B passed -> update C
+            if (!nextBuild) {
+                buildConfig.start = false;
 
-            return createBuild(buildConfig);
-        }
+                return createBuild(buildConfig);
+            }
 
-        nextBuild.parentBuildId = successBuildsIds;
+            nextBuild.parentBuildId = successBuildsIds;
 
-        return nextBuild.update();
-    }).then((b) => {
-        const done = isJoinDone(joinList, finishedBuilds);
+            return nextBuild.update();
+        })
+        .then(b => {
+            const done = isJoinDone(joinList, finishedBuilds);
 
-        if (!done) {
-            return null;
-        }
+            if (!done) {
+                return null;
+            }
 
-        b.status = 'QUEUED';
+            b.status = "QUEUED";
 
-        return b.update()
-            .then(newBuild => newBuild.start());
-    });
+            return b.update().then(newBuild => newBuild.start());
+        });
 }
 
 /**
@@ -170,7 +184,9 @@ function handleNextBuild({
  */
 function dfs(workflowGraph, start, builds, visited) {
     const jobId = workflowGraph.nodes.find(node => node.name === start).id;
-    const nextJobs = workflowParser.getNextJobs(workflowGraph, { trigger: start });
+    const nextJobs = workflowParser.getNextJobs(workflowGraph, {
+        trigger: start
+    });
 
     // If the start job has no build in parentEvent then just return
     if (!builds.find(build => build.jobId === jobId)) {
@@ -194,7 +210,12 @@ function dfs(workflowGraph, start, builds, visited) {
  */
 function removeDownstreamBuilds(config) {
     const { builds, startFrom, parentEvent } = config;
-    const visitedBuilds = dfs(parentEvent.workflowGraph, startFrom, builds, new Set());
+    const visitedBuilds = dfs(
+        parentEvent.workflowGraph,
+        startFrom,
+        builds,
+        new Set()
+    );
 
     return builds.filter(build => !visitedBuilds.has(build.id));
 }
@@ -207,7 +228,7 @@ function removeDownstreamBuilds(config) {
  * @return {Boolean}
  */
 function isPR(jobName) {
-    return jobName.includes(':');
+    return jobName.includes(":");
 }
 
 /**
@@ -218,7 +239,7 @@ function isPR(jobName) {
  */
 function trimJobName(jobName) {
     if (isPR(jobName)) {
-        return jobName.split(':')[1];
+        return jobName.split(":")[1];
     }
 
     return jobName;
@@ -243,10 +264,8 @@ exports.register = (server, options, next) => {
      * @param {String}  config.parentBuildId ID of the build that triggers this event
      * @return {Promise}                     Resolves to the newly created event
      */
-    server.expose('triggerEvent', (config) => {
-        const {
-            pipelineId, startFrom, causeMessage, parentBuildId
-        } = config;
+    server.expose("triggerEvent", config => {
+        const { pipelineId, startFrom, causeMessage, parentBuildId } = config;
         const { eventFactory } = server.root.app;
         const { pipelineFactory } = server.root.app;
         const { scm } = eventFactory;
@@ -254,38 +273,36 @@ exports.register = (server, options, next) => {
         const payload = {
             pipelineId,
             startFrom,
-            type: 'pipeline',
+            type: "pipeline",
             causeMessage,
             parentBuildId
         };
 
-        return pipelineFactory.get(pipelineId)
-            .then(pipeline => pipeline.admin
-                .then((realAdmin) => {
-                    const { scmUri } = pipeline;
-                    const { scmContext } = pipeline;
+        return pipelineFactory.get(pipelineId).then(pipeline =>
+            pipeline.admin.then(realAdmin => {
+                const { scmUri } = pipeline;
+                const { scmContext } = pipeline;
 
-                    payload.scmContext = scmContext;
-                    payload.username = realAdmin.username;
+                payload.scmContext = scmContext;
+                payload.username = realAdmin.username;
 
-                    // get pipeline admin's token
-                    return realAdmin.unsealToken()
-                        .then((token) => {
-                            const scmConfig = {
-                                scmContext,
-                                scmUri,
-                                token
-                            };
+                // get pipeline admin's token
+                return realAdmin.unsealToken().then(token => {
+                    const scmConfig = {
+                        scmContext,
+                        scmUri,
+                        token
+                    };
 
-                            // Get commit sha
-                            return scm.getCommitSha(scmConfig)
-                                .then((sha) => {
-                                    payload.sha = sha;
+                    // Get commit sha
+                    return scm.getCommitSha(scmConfig).then(sha => {
+                        payload.sha = sha;
 
-                                    return eventFactory.create(payload);
-                                });
-                        });
-                }));
+                        return eventFactory.create(payload);
+                    });
+                });
+            })
+        );
     });
 
     /**
@@ -299,74 +316,96 @@ exports.register = (server, options, next) => {
      * @param {String}      config.scmContext   scm context
      * @return {Promise}                        Resolves to the newly created build or null
      */
-    server.expose('triggerNextJobs', (config) => {
-        const {
-            pipeline, job, build, username, scmContext
-        } = config;
+    server.expose("triggerNextJobs", config => {
+        const { pipeline, job, build, username, scmContext } = config;
         const { eventFactory } = server.root.app;
         const { jobFactory } = server.root.app;
         const { buildFactory } = server.root.app;
         const currentJobName = job.name;
         const pipelineId = pipeline.id;
 
-        return eventFactory.get({ id: build.eventId }).then((event) => {
+        return eventFactory.get({ id: build.eventId }).then(event => {
             const { workflowGraph } = event;
-            const nextJobs = workflowParser.getNextJobs(workflowGraph,
-                { trigger: currentJobName, chainPR: pipeline.chainPR });
+            const nextJobs = workflowParser.getNextJobs(workflowGraph, {
+                trigger: currentJobName,
+                chainPR: pipeline.chainPR
+            });
 
             // Create a join object like: {A:[B,C], D:[B,F]} where [B,C] join on A, [B,F] join on D, etc.
             const joinObj = nextJobs.reduce((obj, jobName) => {
-                obj[jobName] = workflowParser.getSrcForJoin(workflowGraph, { jobName });
+                obj[jobName] = workflowParser.getSrcForJoin(workflowGraph, {
+                    jobName
+                });
 
                 return obj;
             }, {});
 
-            return Promise.all(Object.keys(joinObj).map((nextJobName) => {
-                const joinList = joinObj[nextJobName];
-                const joinListNames = joinList.map(j => j.name);
-                const buildConfig = {
-                    jobFactory,
-                    buildFactory,
-                    eventFactory,
-                    pipelineId,
-                    jobName: nextJobName,
-                    username,
-                    scmContext,
-                    build // this is the parentBuild for the next build
-                };
+            return Promise.all(
+                Object.keys(joinObj).map(nextJobName => {
+                    const joinList = joinObj[nextJobName];
+                    const joinListNames = joinList.map(j => j.name);
+                    const buildConfig = {
+                        jobFactory,
+                        buildFactory,
+                        eventFactory,
+                        pipelineId,
+                        jobName: nextJobName,
+                        username,
+                        scmContext,
+                        build // this is the parentBuild for the next build
+                    };
 
-                // Just start the build if falls in to these 2 scenarios
-                // 1. No join
-                // 2. ([~D,B,C]->A) currentJob=D, nextJob=A, joinList(A)=[B,C]
-                //    joinList doesn't include C, so start A
-                if (joinList.length === 0 || !joinListNames.includes(currentJobName)) {
-                    return createBuild(buildConfig);
-                }
-
-                return Promise.resolve().then(() => {
-                    if (!event.parentEventId) {
-                        return event.getBuilds();
+                    // Just start the build if falls in to these 2 scenarios
+                    // 1. No join
+                    // 2. ([~D,B,C]->A) currentJob=D, nextJob=A, joinList(A)=[B,C]
+                    //    joinList doesn't include C, so start A
+                    if (
+                        joinList.length === 0 ||
+                        !joinListNames.includes(currentJobName)
+                    ) {
+                        return createBuild(buildConfig);
                     }
 
-                    // If parent event id, merge parent build status data and
-                    // rerun all builds in the path of the startFrom
-                    return eventFactory.get({ id: event.parentEventId })
-                        .then(parentEvent => parentEvent.getBuilds()
-                            .then(parentBuilds => removeDownstreamBuilds({
-                                builds: parentBuilds,
-                                startFrom: event.startFrom,
-                                parentEvent
-                            })))
-                        .then(upstreamBuilds => event.getBuilds()
-                            .then(builds => builds.concat(upstreamBuilds)));
-                }).then(finishedBuilds => handleNextBuild({
-                    buildConfig,
-                    joinList,
-                    finishedBuilds,
-                    jobId: workflowGraph.nodes
-                        .find(node => node.name === trimJobName(nextJobName)).id
-                }));
-            }));
+                    return Promise.resolve()
+                        .then(() => {
+                            if (!event.parentEventId) {
+                                return event.getBuilds();
+                            }
+
+                            // If parent event id, merge parent build status data and
+                            // rerun all builds in the path of the startFrom
+                            return eventFactory
+                                .get({ id: event.parentEventId })
+                                .then(parentEvent =>
+                                    parentEvent.getBuilds().then(parentBuilds =>
+                                        removeDownstreamBuilds({
+                                            builds: parentBuilds,
+                                            startFrom: event.startFrom,
+                                            parentEvent
+                                        })
+                                    )
+                                )
+                                .then(upstreamBuilds =>
+                                    event
+                                        .getBuilds()
+                                        .then(builds =>
+                                            builds.concat(upstreamBuilds)
+                                        )
+                                );
+                        })
+                        .then(finishedBuilds =>
+                            handleNextBuild({
+                                buildConfig,
+                                joinList,
+                                finishedBuilds,
+                                jobId: workflowGraph.nodes.find(
+                                    node =>
+                                        node.name === trimJobName(nextJobName)
+                                ).id
+                            })
+                        );
+                })
+            );
         });
     });
 
@@ -389,5 +428,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'builds'
+    name: "builds"
 };

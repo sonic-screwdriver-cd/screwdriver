@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.secret.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.secret.base, "id");
 
 module.exports = () => ({
-    method: 'PUT',
-    path: '/secrets/{id}',
+    method: "PUT",
+    path: "/secrets/{id}",
     config: {
-        description: 'Update a secret',
-        notes: 'Update a specific secret',
-        tags: ['api', 'secrets'],
+        description: "Update a secret",
+        notes: "Update a specific secret",
+        tags: ["api", "secrets"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -26,16 +26,17 @@ module.exports = () => ({
             const { credentials } = request.auth;
             const { canAccess } = request.server.plugins.secrets;
 
-            return factory.get(request.params.id)
-                .then((secret) => {
+            return factory
+                .get(request.params.id)
+                .then(secret => {
                     if (!secret) {
-                        throw boom.notFound('Secret does not exist');
+                        throw boom.notFound("Secret does not exist");
                     }
 
                     // Make sure that user has permission before updating
-                    return canAccess(credentials, secret, 'admin')
+                    return canAccess(credentials, secret, "admin")
                         .then(() => {
-                            Object.keys(request.payload).forEach((key) => {
+                            Object.keys(request.payload).forEach(key => {
                                 secret[key] = request.payload[key];
                             });
 

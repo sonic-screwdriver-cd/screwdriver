@@ -1,27 +1,27 @@
-'use strict';
+"use strict";
 
-const createRoute = require('./create');
-const updateRoute = require('./update');
-const removeRoute = require('./remove');
-const syncRoute = require('./sync');
-const syncWebhooksRoute = require('./syncWebhooks');
-const syncPRsRoute = require('./syncPRs');
-const getRoute = require('./get');
-const listRoute = require('./list');
-const badgeRoute = require('./badge');
-const jobBadgeRoute = require('./jobBadge');
-const listJobsRoute = require('./listJobs');
-const listTriggersRoute = require('./listTriggers');
-const listSecretsRoute = require('./listSecrets');
-const listEventsRoute = require('./listEvents');
-const startAllRoute = require('./startAll');
-const createToken = require('./tokens/create');
-const updateToken = require('./tokens/update');
-const refreshToken = require('./tokens/refresh');
-const listTokens = require('./tokens/list');
-const removeToken = require('./tokens/remove');
-const removeAllTokens = require('./tokens/removeAll');
-const metricsRoute = require('./metrics');
+const createRoute = require("./create");
+const updateRoute = require("./update");
+const removeRoute = require("./remove");
+const syncRoute = require("./sync");
+const syncWebhooksRoute = require("./syncWebhooks");
+const syncPRsRoute = require("./syncPRs");
+const getRoute = require("./get");
+const listRoute = require("./list");
+const badgeRoute = require("./badge");
+const jobBadgeRoute = require("./jobBadge");
+const listJobsRoute = require("./listJobs");
+const listTriggersRoute = require("./listTriggers");
+const listSecretsRoute = require("./listSecrets");
+const listEventsRoute = require("./listEvents");
+const startAllRoute = require("./startAll");
+const createToken = require("./tokens/create");
+const updateToken = require("./tokens/update");
+const refreshToken = require("./tokens/refresh");
+const listTokens = require("./tokens/list");
+const removeToken = require("./tokens/remove");
+const removeAllTokens = require("./tokens/removeAll");
+const metricsRoute = require("./metrics");
 
 /**
  * Pipeline API Plugin
@@ -32,18 +32,18 @@ const metricsRoute = require('./metrics');
  */
 exports.register = (server, options, next) => {
     const statusColor = {
-        unknown: 'lightgrey',
-        disabled: 'lightgrey',
-        created: 'lightgrey',
-        success: 'green',
-        queued: 'blue',
-        blocked: 'blue',
-        running: 'blue',
-        collapsed: 'lightgrey',
-        frozen: 'lightgrey',
-        unstable: 'yellow',
-        failure: 'red',
-        aborted: 'red'
+        unknown: "lightgrey",
+        disabled: "lightgrey",
+        created: "lightgrey",
+        success: "green",
+        queued: "blue",
+        blocked: "blue",
+        running: "blue",
+        collapsed: "lightgrey",
+        frozen: "lightgrey",
+        unstable: "yellow",
+        failure: "red",
+        aborted: "red"
     };
 
     /**
@@ -53,16 +53,16 @@ exports.register = (server, options, next) => {
      * @param  {String} subject                subject to put in the badge
      * @return {String} encodedSubject
      */
-    server.expose('encodeBadgeSubject', ({ badgeService, subject }) => {
+    server.expose("encodeBadgeSubject", ({ badgeService, subject }) => {
         const separator = badgeService.match(/}}(.){{/)[1];
 
-        if (separator === '/') {
+        if (separator === "/") {
             return encodeURIComponent(subject);
         }
 
         // Reference: https://shields.io/
-        if (separator === '-') {
-            return subject.replace(/-/g, '--').replace(/_/g, '__');
+        if (separator === "-") {
+            return subject.replace(/-/g, "--").replace(/_/g, "__");
         }
 
         return subject;
@@ -77,8 +77,12 @@ exports.register = (server, options, next) => {
      * @param  {String} credentials.pipelineId ID of pipeline which the token is allowed to access
      * @param  {String} credentials.scope      Scope whose token is allowed
      */
-    server.expose('isValidToken', (id, credentials) => !credentials.scope.includes('pipeline')
-                || parseInt(id, 10) === parseInt(credentials.pipelineId, 10));
+    server.expose(
+        "isValidToken",
+        (id, credentials) =>
+            !credentials.scope.includes("pipeline") ||
+            parseInt(id, 10) === parseInt(credentials.pipelineId, 10)
+    );
 
     server.route([
         createRoute(),
@@ -109,5 +113,5 @@ exports.register = (server, options, next) => {
 };
 
 exports.register.attributes = {
-    name: 'pipelines'
+    name: "pipelines"
 };

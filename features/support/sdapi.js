@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const request = require('./request');
+const request = require("./request");
 const WAIT_TIME = 6;
 
 /**
@@ -13,7 +13,7 @@ const WAIT_TIME = 6;
  * @return {Promise}
  */
 function promiseToWait(timeToWait) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         setTimeout(() => resolve(), timeToWait * 1000);
     });
 }
@@ -41,37 +41,38 @@ function findBuilds(config) {
 
     return request({
         json: true,
-        method: 'GET',
+        method: "GET",
         uri: `${instance}/v4/pipelines/${pipelineId}/jobs`,
         auth: {
             bearer: config.jwt
         }
-    })
-        .then((response) => {
-            const jobData = response.body;
-            let result = [];
+    }).then(response => {
+        const jobData = response.body;
+        let result = [];
 
-            if (pullRequestNumber) {
-                result = jobData.filter(job => job.name.startsWith(`PR-${pullRequestNumber}`));
-            } else {
-                result = jobData.filter(job => job.name === jobName);
+        if (pullRequestNumber) {
+            result = jobData.filter(job =>
+                job.name.startsWith(`PR-${pullRequestNumber}`)
+            );
+        } else {
+            result = jobData.filter(job => job.name === jobName);
+        }
+
+        if (result.length === 0) {
+            return Promise.resolve(result);
+        }
+
+        const jobId = result[0].id;
+
+        return request({
+            json: true,
+            method: "GET",
+            uri: `${instance}/v4/jobs/${jobId}/builds`,
+            auth: {
+                bearer: config.jwt
             }
-
-            if (result.length === 0) {
-                return Promise.resolve(result);
-            }
-
-            const jobId = result[0].id;
-
-            return request({
-                json: true,
-                method: 'GET',
-                uri: `${instance}/v4/jobs/${jobId}/builds`,
-                auth: {
-                    bearer: config.jwt
-                }
-            });
         });
+    });
 }
 
 /**
@@ -94,12 +95,12 @@ function findEventBuilds(config) {
 
     return request({
         json: true,
-        method: 'GET',
+        method: "GET",
         uri: `${instance}/v4/events/${eventId}/builds`,
         auth: {
             bearer: config.jwt
         }
-    }).then((response) => {
+    }).then(response => {
         const builds = response.body || [];
         const job = config.jobs.find(j => j.name === config.jobName);
         const build = builds.find(b => b.jobId === job.id);
@@ -136,7 +137,7 @@ function searchForBuild(config) {
     const { desiredSha } = config;
     const { desiredStatus } = config;
     const { jwt } = config;
-    const jobName = config.jobName || 'main';
+    const jobName = config.jobName || "main";
 
     return findBuilds({
         instance,
@@ -144,7 +145,7 @@ function searchForBuild(config) {
         pullRequestNumber,
         jobName,
         jwt
-    }).then((buildData) => {
+    }).then(buildData => {
         let result = buildData.body || [];
 
         if (desiredSha) {
@@ -182,12 +183,12 @@ function waitForBuildStatus(config) {
 
     return request({
         json: true,
-        method: 'GET',
+        method: "GET",
         uri: `${instance}/v4/builds/${buildId}`,
         auth: {
             bearer: config.jwt
         }
-    }).then((response) => {
+    }).then(response => {
         const buildData = response.body;
 
         if (desiredStatus.includes(buildData.status)) {
@@ -216,19 +217,20 @@ function cleanupToken(config) {
 
     return request({
         uri: `${instance}/${namespace}/tokens`,
-        method: 'GET',
+        method: "GET",
         auth: {
             bearer: jwt
         }
-    }).then((response) => {
-        const match = JSON.parse(response.body)
-            .find(token => token.name === tokenName);
+    }).then(response => {
+        const match = JSON.parse(response.body).find(
+            token => token.name === tokenName
+        );
 
         if (!match) return Promise.resolve();
 
         return request({
             uri: `${instance}/${namespace}/tokens/${match.id}`,
-            method: 'DELETE',
+            method: "DELETE",
             auth: {
                 bearer: jwt
             }

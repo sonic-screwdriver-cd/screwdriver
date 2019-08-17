@@ -1,11 +1,11 @@
-'use strict';
+"use strict";
 
-const Assert = require('chai').assert;
-const path = require('path');
-const env = require('node-env-file');
-const requestretry = require('requestretry');
-const { defineSupportCode } = require('cucumber');
-const request = require('../support/request');
+const Assert = require("chai").assert;
+const path = require("path");
+const env = require("node-env-file");
+const requestretry = require("requestretry");
+const { defineSupportCode } = require("cucumber");
+const request = require("../support/request");
 
 /**
  * Retry until the build has finished
@@ -16,7 +16,7 @@ const request = require('../support/request');
  * @return {Boolean}     Retry the build or not
  */
 function buildRetryStrategy(err, response, body) {
-    return err || body.status === 'QUEUED' || body.status === 'RUNNING';
+    return err || body.status === "QUEUED" || body.status === "RUNNING";
 }
 
 /**
@@ -26,7 +26,7 @@ function buildRetryStrategy(err, response, body) {
  * @return {Promise}
  */
 function promiseToWait(timeToWait) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         setTimeout(() => resolve(), timeToWait * 1000);
     });
 }
@@ -40,15 +40,15 @@ function promiseToWait(timeToWait) {
  * @return {Promise}
  */
 function ensurePipelineExists(config) {
-    const branch = config.branch || 'master';
+    const branch = config.branch || "master";
 
     return this.getJwt(this.apiToken)
-        .then((response) => {
+        .then(response => {
             this.jwt = response.body.token;
 
             return this.createPipeline(config.repoName, branch);
         })
-        .then((response) => {
+        .then(response => {
             Assert.oneOf(response.statusCode, [409, 201]);
 
             if (response.statusCode === 201) {
@@ -58,24 +58,26 @@ function ensurePipelineExists(config) {
             }
 
             const str = response.body.message;
-            const id = str.split(': ')[1];
+            const id = str.split(": ")[1];
 
             this.pipelineId = id;
 
             // If pipeline already exists, deletes and re-creates
-            return this.deletePipeline(this.pipelineId).then((resDel) => {
+            return this.deletePipeline(this.pipelineId).then(resDel => {
                 Assert.equal(resDel.statusCode, 204);
 
-                return this.createPipeline(config.repoName, branch).then((resCre) => {
-                    Assert.equal(resCre.statusCode, 201);
+                return this.createPipeline(config.repoName, branch).then(
+                    resCre => {
+                        Assert.equal(resCre.statusCode, 201);
 
-                    this.pipelineId = resCre.body.id;
+                        this.pipelineId = resCre.body.id;
 
-                    return this.getPipeline(this.pipelineId);
-                });
+                        return this.getPipeline(this.pipelineId);
+                    }
+                );
             });
         })
-        .then((response) => {
+        .then(response => {
             Assert.equal(response.statusCode, 200);
 
             this.jobs = response.body;
@@ -84,15 +86,16 @@ function ensurePipelineExists(config) {
                 const job = response.body[i];
 
                 switch (job.name) {
-                case 'publish': // for event test
-                case 'second': // for metadata and secret tests
-                    this.secondJobId = job.id;
-                    break;
-                case 'third':
-                    this.thirdJobId = job.id;
-                    break;
-                default: // main job
-                    this.jobId = job.id;
+                    case "publish": // for event test
+                    case "second": // for metadata and secret tests
+                        this.secondJobId = job.id;
+                        break;
+                    case "third":
+                        this.thirdJobId = job.id;
+                        break;
+                    default:
+                        // main job
+                        this.jobId = job.id;
                 }
             }
         });
@@ -107,72 +110,82 @@ function ensurePipelineExists(config) {
 function CustomWorld({ attach, parameters }) {
     this.attach = attach;
     this.parameters = parameters;
-    env(path.join(__dirname, '../../.func_config'), { raise: false });
+    env(path.join(__dirname, "../../.func_config"), { raise: false });
     this.gitToken = process.env.GIT_TOKEN;
     this.apiToken = process.env.SD_API_TOKEN;
-    this.protocol = process.env.SD_API_PROTOCOL || 'https';
+    this.protocol = process.env.SD_API_PROTOCOL || "https";
     this.instance = `${this.protocol}://${process.env.SD_API_HOST}`;
     this.testOrg = process.env.TEST_ORG;
     this.username = process.env.TEST_USERNAME;
-    this.scmHostname = process.env.TEST_SCM_HOSTNAME || 'github.com';
-    this.scmContext = process.env.TEST_SCM_CONTEXT || 'github';
-    this.namespace = 'v4';
+    this.scmHostname = process.env.TEST_SCM_HOSTNAME || "github.com";
+    this.scmContext = process.env.TEST_SCM_CONTEXT || "github";
+    this.namespace = "v4";
     this.promiseToWait = time => promiseToWait(time);
-    this.getJwt = apiToken => request({
-        followAllRedirects: true,
-        json: true,
-        method: 'GET',
-        url: `${this.instance}/${this.namespace}/auth/token?api_token=${apiToken}`
-    });
-    this.waitForBuild = buildID => requestretry({
-        uri: `${this.instance}/${this.namespace}/builds/${buildID}`,
-        method: 'GET',
-        maxAttempts: 25,
-        retryDelay: 15000,
-        retryStrategy: buildRetryStrategy,
-        json: true,
-        auth: {
-            bearer: this.jwt
-        }
-    });
-    this.loginWithToken = apiToken => request({
-        uri: `${this.instance}/${this.namespace}/auth/logout`,
-        method: 'POST',
-        auth: {
-            bearer: this.jwt
-        }
-        // Actual login is accomplished through getJwt
-    }).then(() => this.getJwt(apiToken).then((response) => {
-        this.loginResponse = response;
-    }));
-    this.getPipeline = pipelineId => request({
-        uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}/jobs`,
-        method: 'GET',
-        json: true,
-        auth: {
-            bearer: this.jwt
-        }
-    });
-    this.createPipeline = (repoName, branch) => request({
-        uri: `${this.instance}/${this.namespace}/pipelines`,
-        method: 'POST',
-        auth: {
-            bearer: this.jwt
-        },
-        body: {
-            checkoutUrl: `git@${this.scmHostname}:${this.testOrg}/${repoName}.git#${branch}`
-        },
-        json: true
-    });
-    this.deletePipeline = pipelineId => request({
-        uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}`,
-        method: 'DELETE',
-        auth: {
-            bearer: this.jwt
-        },
-        json: true
-    });
+    this.getJwt = apiToken =>
+        request({
+            followAllRedirects: true,
+            json: true,
+            method: "GET",
+            url: `${this.instance}/${this.namespace}/auth/token?api_token=${apiToken}`
+        });
+    this.waitForBuild = buildID =>
+        requestretry({
+            uri: `${this.instance}/${this.namespace}/builds/${buildID}`,
+            method: "GET",
+            maxAttempts: 25,
+            retryDelay: 15000,
+            retryStrategy: buildRetryStrategy,
+            json: true,
+            auth: {
+                bearer: this.jwt
+            }
+        });
+    this.loginWithToken = apiToken =>
+        request({
+            uri: `${this.instance}/${this.namespace}/auth/logout`,
+            method: "POST",
+            auth: {
+                bearer: this.jwt
+            }
+            // Actual login is accomplished through getJwt
+        }).then(() =>
+            this.getJwt(apiToken).then(response => {
+                this.loginResponse = response;
+            })
+        );
+    this.getPipeline = pipelineId =>
+        request({
+            uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}/jobs`,
+            method: "GET",
+            json: true,
+            auth: {
+                bearer: this.jwt
+            }
+        });
+    this.createPipeline = (repoName, branch) =>
+        request({
+            uri: `${this.instance}/${this.namespace}/pipelines`,
+            method: "POST",
+            auth: {
+                bearer: this.jwt
+            },
+            body: {
+                checkoutUrl: `git@${this.scmHostname}:${this.testOrg}/${repoName}.git#${branch}`
+            },
+            json: true
+        });
+    this.deletePipeline = pipelineId =>
+        request({
+            uri: `${this.instance}/${this.namespace}/pipelines/${pipelineId}`,
+            method: "DELETE",
+            auth: {
+                bearer: this.jwt
+            },
+            json: true
+        });
     this.ensurePipelineExists = ensurePipelineExists;
 }
 
-defineSupportCode(({ setWorldConstructor }) => setWorldConstructor(CustomWorld));
+defineSupportCode(({ setWorldConstructor }) =>
+    setWorldConstructor(CustomWorld)
+);

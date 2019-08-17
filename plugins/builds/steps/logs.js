@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const schema = require('screwdriver-data-schema');
-const request = require('request');
-const ndjson = require('ndjson');
-const winston = require('winston');
+const boom = require("boom");
+const schema = require("screwdriver-data-schema");
+const request = require("request");
+const ndjson = require("ndjson");
+const winston = require("winston");
 const MAX_LINES_SMALL = 100;
 const MAX_LINES_BIG = 1000;
 
@@ -18,9 +18,7 @@ const MAX_LINES_BIG = 1000;
  * @param  {String}     config.sort                Method for sorting log lines ('ascending' or 'descending')
  * @return {Promise}                               [Array of log lines]
  */
-async function fetchLog({
-    baseUrl, linesFrom, authToken, page, sort
-}) {
+async function fetchLog({ baseUrl, linesFrom, authToken, page, sort }) {
     const output = [];
 
     return new Promise((resolve, reject) => {
@@ -31,20 +29,25 @@ async function fetchLog({
                     Authorization: authToken
                 }
             })
-            .on('error', e => reject(e))
+            .on("error", e => reject(e))
             // Parse the ndjson
-            .pipe(ndjson.parse({
-                strict: false
-            }))
+            .pipe(
+                ndjson.parse({
+                    strict: false
+                })
+            )
             // Only save lines that we care about
-            .on('data', (line) => {
-                const isNextLine = sort === 'ascending' ? line.n >= linesFrom : line.n <= linesFrom;
+            .on("data", line => {
+                const isNextLine =
+                    sort === "ascending"
+                        ? line.n >= linesFrom
+                        : line.n <= linesFrom;
 
                 if (isNextLine) {
                     output.push(line);
                 }
             })
-            .on('end', () => resolve(output));
+            .on("end", () => resolve(output));
     });
 }
 
@@ -64,7 +67,7 @@ async function getMaxLines({ baseUrl, authToken }) {
         linesInFirstPage = await fetchLog({
             baseUrl,
             authToken,
-            sort: 'ascending',
+            sort: "ascending",
             linesFrom: 0,
             page: 0
         });
@@ -73,7 +76,9 @@ async function getMaxLines({ baseUrl, authToken }) {
         throw new Error(err);
     }
 
-    return linesInFirstPage.length > MAX_LINES_SMALL ? MAX_LINES_BIG : MAX_LINES_SMALL;
+    return linesInFirstPage.length > MAX_LINES_SMALL
+        ? MAX_LINES_BIG
+        : MAX_LINES_SMALL;
 }
 
 /**
@@ -93,7 +98,7 @@ async function loadLines({
     linesFrom,
     authToken,
     pagesToLoad = 10,
-    sort = 'ascending',
+    sort = "ascending",
     maxLines
 }) {
     const page = Math.floor(linesFrom / maxLines);
@@ -102,7 +107,11 @@ async function loadLines({
 
     try {
         lines = await fetchLog({
-            baseUrl, linesFrom, authToken, page, sort
+            baseUrl,
+            linesFrom,
+            authToken,
+            page,
+            sort
         });
     } catch (err) {
         winston.error(err);
@@ -111,13 +120,16 @@ async function loadLines({
 
     const linesCount = lines.length;
     const pagesToLoadUpdated = pagesToLoad - 1;
-    const linesFromUpdated = sort === 'descending'
-        ? linesFrom - linesCount : linesCount + linesFrom;
+    const linesFromUpdated =
+        sort === "descending" ? linesFrom - linesCount : linesCount + linesFrom;
     // If we got lines AND there are more lines to load
-    const descLoadNext = sort === 'descending' && linesCount > 0 && linesFrom - linesCount > 0;
+    const descLoadNext =
+        sort === "descending" && linesCount > 0 && linesFrom - linesCount > 0;
     // If we got lines AND we reached the edge of a page
-    const ascLoadNext = sort === 'ascending' && linesCount > 0
-        && (linesCount + linesFrom) % maxLines === 0;
+    const ascLoadNext =
+        sort === "ascending" &&
+        linesCount > 0 &&
+        (linesCount + linesFrom) % maxLines === 0;
 
     // Load from next log if there's still lines left
     if (ascLoadNext || descLoadNext) {
@@ -131,14 +143,13 @@ async function loadLines({
                 maxLines
             };
 
-            return loadLines(loadConfig)
-                .then(([nextLines, pageLimit]) => {
-                    if (sort === 'descending') {
-                        return [nextLines.concat(lines), pageLimit];
-                    }
+            return loadLines(loadConfig).then(([nextLines, pageLimit]) => {
+                if (sort === "descending") {
+                    return [nextLines.concat(lines), pageLimit];
+                }
 
-                    return [lines.concat(nextLines), pageLimit];
-                });
+                return [lines.concat(nextLines), pageLimit];
+            });
         }
         // Otherwise exit early and flag that there may be more pages
         morePages = true;
@@ -148,18 +159,18 @@ async function loadLines({
 }
 
 module.exports = config => ({
-    method: 'GET',
-    path: '/builds/{id}/steps/{name}/logs',
+    method: "GET",
+    path: "/builds/{id}/steps/{name}/logs",
     config: {
-        description: 'Get the logs for a build step',
-        notes: 'Returns the logs for a step',
-        tags: ['api', 'builds', 'steps', 'log'],
+        description: "Get the logs for a build step",
+        notes: "Returns the logs for a step",
+        tags: ["api", "builds", "steps", "log"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'pipeline']
+            strategies: ["token"],
+            scope: ["user", "pipeline"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -169,30 +180,32 @@ module.exports = config => ({
             const stepName = req.params.name;
             const { headers } = req;
 
-            factory.get(buildId)
-                .then((model) => {
+            factory
+                .get(buildId)
+                .then(model => {
                     if (!model) {
-                        throw boom.notFound('Build does not exist');
+                        throw boom.notFound("Build does not exist");
                     }
 
-                    const stepModel = model.steps.filter(step => (
-                        step.name === stepName
-                    )).pop();
+                    const stepModel = model.steps
+                        .filter(step => step.name === stepName)
+                        .pop();
 
                     if (!stepModel) {
-                        throw boom.notFound('Step does not exist');
+                        throw boom.notFound("Step does not exist");
                     }
 
                     const isNotStarted = stepModel.startTime === undefined;
                     const output = [];
 
                     if (isNotStarted) {
-                        return reply(output).header('X-More-Data', 'false');
+                        return reply(output).header("X-More-Data", "false");
                     }
 
                     const isDone = stepModel.code !== undefined;
-                    const baseUrl = `${config.ecosystem.store}/v1/builds/`
-                        + `${buildId}/${stepName}/log`;
+                    const baseUrl =
+                        `${config.ecosystem.store}/v1/builds/` +
+                        `${buildId}/${stepName}/log`;
                     const authToken = headers.authorization;
                     const { sort } = req.query;
                     const pagesToLoad = req.query.pages;
@@ -200,16 +213,22 @@ module.exports = config => ({
 
                     // eslint-disable-next-line max-len
                     return getMaxLines({ baseUrl, authToken })
-                        .then(maxLines => loadLines({
-                            baseUrl,
-                            linesFrom,
-                            authToken,
-                            pagesToLoad,
-                            sort,
-                            maxLines
-                        }))
-                        .then(([lines, morePages]) => reply(lines)
-                            .header('X-More-Data', (morePages || !isDone).toString()));
+                        .then(maxLines =>
+                            loadLines({
+                                baseUrl,
+                                linesFrom,
+                                authToken,
+                                pagesToLoad,
+                                sort,
+                                maxLines
+                            })
+                        )
+                        .then(([lines, morePages]) =>
+                            reply(lines).header(
+                                "X-More-Data",
+                                (morePages || !isDone).toString()
+                            )
+                        );
                 })
                 .catch(err => reply(boom.boomify(err)));
         },

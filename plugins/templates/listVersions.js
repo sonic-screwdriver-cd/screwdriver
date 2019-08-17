@@ -1,24 +1,28 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const listSchema = joi.array().items(schema.models.template.get).label('List of templates');
-const nameSchema = joi.reach(schema.models.template.base, 'name');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const listSchema = joi
+    .array()
+    .items(schema.models.template.get)
+    .label("List of templates");
+const nameSchema = joi.reach(schema.models.template.base, "name");
 
 module.exports = () => ({
-    method: 'GET',
-    path: '/templates/{name}',
+    method: "GET",
+    path: "/templates/{name}",
     config: {
-        description: 'Get all template versions for a given template name with pagination',
-        notes: 'Returns all template records for a given template name',
-        tags: ['api', 'templates', 'versions'],
+        description:
+            "Get all template versions for a given template name with pagination",
+        notes: "Returns all template records for a given template name",
+        tags: ["api", "templates", "versions"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', 'build']
+            strategies: ["token"],
+            scope: ["user", "build"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -38,10 +42,11 @@ module.exports = () => ({
                 };
             }
 
-            return factory.list(config)
-                .then((templates) => {
+            return factory
+                .list(config)
+                .then(templates => {
                     if (templates.length === 0) {
-                        throw boom.notFound('Template does not exist');
+                        throw boom.notFound("Template does not exist");
                     }
 
                     reply(templates.map(p => p.toJson()));

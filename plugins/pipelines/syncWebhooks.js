@@ -1,23 +1,23 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.pipeline.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.pipeline.base, "id");
 
 module.exports = () => ({
-    method: 'POST',
-    path: '/pipelines/{id}/sync/webhooks',
+    method: "POST",
+    path: "/pipelines/{id}/sync/webhooks",
     config: {
-        description: 'Add webhooks or update webhooks if already exists',
-        notes: 'Add or update Screwdriver API webhooks',
-        tags: ['api', 'pipelines'],
+        description: "Add webhooks or update webhooks if already exists",
+        notes: "Add or update Screwdriver API webhooks",
+        tags: ["api", "pipelines"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -32,27 +32,37 @@ module.exports = () => ({
             return Promise.all([
                 pipelineFactory.get(id),
                 userFactory.get({ username, scmContext })
-            ]).then(([pipeline, user]) => {
-                if (!pipeline) {
-                    throw boom.notFound('Pipeline does not exist');
-                }
-                if (!user) {
-                    throw boom.notFound(`User ${username} does not exist`);
-                }
+            ])
+                .then(([pipeline, user]) => {
+                    if (!pipeline) {
+                        throw boom.notFound("Pipeline does not exist");
+                    }
+                    if (!user) {
+                        throw boom.notFound(`User ${username} does not exist`);
+                    }
 
-                // ask the user for permissions on this repo
-                return user.getPermissions(pipeline.scmUri)
-                    // check if user has push access
-                    .then((permissions) => {
-                        if (!permissions.push) {
-                            throw boom.forbidden(`User ${username} `
-                                + 'does not have push permission for this repo');
-                        }
-                    })
-                    // user has good permissions, add or update webhooks
-                    .then(() => pipeline.addWebhook(`${request.server.info.uri}/v4/webhooks`))
-                    .then(() => reply().code(204));
-            })
+                    // ask the user for permissions on this repo
+                    return (
+                        user
+                            .getPermissions(pipeline.scmUri)
+                            // check if user has push access
+                            .then(permissions => {
+                                if (!permissions.push) {
+                                    throw boom.forbidden(
+                                        `User ${username} ` +
+                                            "does not have push permission for this repo"
+                                    );
+                                }
+                            })
+                            // user has good permissions, add or update webhooks
+                            .then(() =>
+                                pipeline.addWebhook(
+                                    `${request.server.info.uri}/v4/webhooks`
+                                )
+                            )
+                            .then(() => reply().code(204))
+                    );
+                })
                 .catch(err => reply(boom.boomify(err)));
         },
         validate: {

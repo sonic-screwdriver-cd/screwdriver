@@ -1,23 +1,24 @@
-'use strict';
+"use strict";
 
-const boom = require('boom');
-const joi = require('joi');
-const schema = require('screwdriver-data-schema');
-const idSchema = joi.reach(schema.models.token.base, 'id');
+const boom = require("boom");
+const joi = require("joi");
+const schema = require("screwdriver-data-schema");
+const idSchema = joi.reach(schema.models.token.base, "id");
 
 module.exports = () => ({
-    method: 'PUT',
-    path: '/tokens/{id}/refresh',
+    method: "PUT",
+    path: "/tokens/{id}/refresh",
     config: {
-        description: 'Refresh a token',
-        notes: 'Update the value of a token while preserving its other metadata',
-        tags: ['api', 'tokens'],
+        description: "Refresh a token",
+        notes:
+            "Update the value of a token while preserving its other metadata",
+        tags: ["api", "tokens"],
         auth: {
-            strategies: ['token'],
-            scope: ['user', '!guest']
+            strategies: ["token"],
+            scope: ["user", "!guest"]
         },
         plugins: {
-            'hapi-swagger': {
+            "hapi-swagger": {
                 security: [{ token: [] }]
             }
         },
@@ -26,10 +27,11 @@ module.exports = () => ({
             const { credentials } = request.auth;
             const { canAccess } = request.server.plugins.tokens;
 
-            return tokenFactory.get(request.params.id)
-                .then((token) => {
+            return tokenFactory
+                .get(request.params.id)
+                .then(token => {
                     if (!token) {
-                        throw boom.notFound('Token does not exist');
+                        throw boom.notFound("Token does not exist");
                     }
 
                     return canAccess(credentials, token)

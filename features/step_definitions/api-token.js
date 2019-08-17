@@ -1,21 +1,21 @@
-'use strict';
+"use strict";
 
-const Assert = require('chai').assert;
-const jwt = require('jsonwebtoken');
-const { defineSupportCode } = require('cucumber');
-const request = require('../support/request');
-const sdapi = require('../support/sdapi');
+const Assert = require("chai").assert;
+const jwt = require("jsonwebtoken");
+const { defineSupportCode } = require("cucumber");
+const request = require("../support/request");
+const sdapi = require("../support/sdapi");
 
-defineSupportCode(({
-    Before, Given, When, Then
-}) => {
-    Before('@apitoken', function hook() {
+defineSupportCode(({ Before, Given, When, Then }) => {
+    Before("@apitoken", function hook() {
         this.loginResponse = null;
         this.testToken = null;
         this.updatedToken = null;
     });
 
-    Given(/^"calvin" does not own a token named "([^"]*)"$/, function step(token) {
+    Given(/^"calvin" does not own a token named "([^"]*)"$/, function step(
+        token
+    ) {
         // Ensure there won't be a conflict: delete the token if it's already there
         return sdapi.cleanupToken({
             token,
@@ -25,10 +25,12 @@ defineSupportCode(({
         });
     });
 
-    When(/^a new API token named "([^"]*)" is generated$/, function step(tokenName) {
+    When(/^a new API token named "([^"]*)" is generated$/, function step(
+        tokenName
+    ) {
         return request({
             uri: `${this.instance}/${this.namespace}/tokens`,
-            method: 'POST',
+            method: "POST",
             auth: {
                 bearer: this.jwt
             },
@@ -36,9 +38,9 @@ defineSupportCode(({
                 name: tokenName
             },
             json: true
-        }).then((response) => {
+        }).then(response => {
             Assert.strictEqual(response.statusCode, 201);
-            Assert.strictEqual(response.body.lastUsed, '');
+            Assert.strictEqual(response.body.lastUsed, "");
             // Check that it's a base64 value of the right length to be a token
             // encoded with https://www.npmjs.com/package/base64url
             Assert.match(response.body.value, /[a-zA-Z0-9_-]{43}/);
@@ -58,67 +60,75 @@ defineSupportCode(({
         Assert.strictEqual(decodedToken.username, this.username);
     });
 
-    Then(/^the "([^"]*)" token's 'last used' property is updated$/, function step(tokenName) {
-        return request({
-            uri: `${this.instance}/${this.namespace}/tokens`,
-            method: 'GET',
-            auth: {
-                bearer: this.jwt
-            },
-            json: true
-        }).then((response) => {
-            const { lastUsed } = response.body
-                .find(token => token.name === tokenName);
-
-            Assert.notEqual(lastUsed, '');
-        });
-    });
-
-    Given(/^"calvin" owns an existing API token named "([^"]*)"$/, function step(tokenName) {
-        return request({
-            uri: `${this.instance}/${this.namespace}/tokens`,
-            method: 'POST',
-            auth: {
-                bearer: this.jwt
-            },
-            body: {
-                name: tokenName
-            },
-            json: true
-        }).then((response) => {
-            Assert.oneOf(response.statusCode, [409, 201]);
-
-            if (response.statusCode === 201) {
-                this.testToken = response.body;
-
-                return null;
-            }
-
+    Then(
+        /^the "([^"]*)" token's 'last used' property is updated$/,
+        function step(tokenName) {
             return request({
                 uri: `${this.instance}/${this.namespace}/tokens`,
-                method: 'GET',
+                method: "GET",
                 auth: {
                     bearer: this.jwt
                 },
                 json: true
-            }).then((listResponse) => {
-                Assert.strictEqual(listResponse.statusCode, 200);
+            }).then(response => {
+                const { lastUsed } = response.body.find(
+                    token => token.name === tokenName
+                );
 
-                this.testToken = listResponse.body
-                    .find(token => token.name === tokenName);
+                Assert.notEqual(lastUsed, "");
             });
-        });
-    });
+        }
+    );
+
+    Given(
+        /^"calvin" owns an existing API token named "([^"]*)"$/,
+        function step(tokenName) {
+            return request({
+                uri: `${this.instance}/${this.namespace}/tokens`,
+                method: "POST",
+                auth: {
+                    bearer: this.jwt
+                },
+                body: {
+                    name: tokenName
+                },
+                json: true
+            }).then(response => {
+                Assert.oneOf(response.statusCode, [409, 201]);
+
+                if (response.statusCode === 201) {
+                    this.testToken = response.body;
+
+                    return null;
+                }
+
+                return request({
+                    uri: `${this.instance}/${this.namespace}/tokens`,
+                    method: "GET",
+                    auth: {
+                        bearer: this.jwt
+                    },
+                    json: true
+                }).then(listResponse => {
+                    Assert.strictEqual(listResponse.statusCode, 200);
+
+                    this.testToken = listResponse.body.find(
+                        token => token.name === tokenName
+                    );
+                });
+            });
+        }
+    );
 
     When(/^he lists all his tokens$/, function step() {
         return request({
             uri: `${this.instance}/${this.namespace}/tokens`,
-            method: 'GET',
+            method: "GET",
             auth: {
                 bearer: this.jwt
             },
             json: true
-        }).then((response) => {
+        }).then(response => {
             Assert.strictEqual(response.statusCode, 200);
 
             this.tokenList = response.body;
@@ -134,21 +144,26 @@ defineSupportCode(({
     });
 
     Then(/^his token is safely described$/, function step() {
-        const expectedKeys = ['id', 'name', 'lastUsed'];
-        const forbiddenKeys = ['hash', 'value'];
+        const expectedKeys = ["id", "name", "lastUsed"];
+        const forbiddenKeys = ["hash", "value"];
 
-        expectedKeys.forEach(property => Assert.property(this.testToken, property));
+        expectedKeys.forEach(property =>
+            Assert.property(this.testToken, property)
+        );
 
-        forbiddenKeys.forEach(property => Assert.notProperty(this.testToken, property));
+        forbiddenKeys.forEach(property =>
+            Assert.notProperty(this.testToken, property)
+        );
     });
 
     When(/^he changes the label associated with the token$/, function step() {
         // Make sure update is getting called with a value that isn't already there
-        this.newDescription = this.testToken.description === 'tiger' ? 'not tiger' : 'tiger';
+        this.newDescription =
+            this.testToken.description === "tiger" ? "not tiger" : "tiger";
 
         return request({
             uri: `${this.instance}/${this.namespace}/tokens/${this.testToken.id}`,
-            method: 'PUT',
+            method: "PUT",
             auth: {
                 bearer: this.jwt
             },
@@ -156,7 +171,7 @@ defineSupportCode(({
                 description: this.newDescription
             },
             json: true
-        }).then((response) => {
+        }).then(response => {
             Assert.strictEqual(response.statusCode, 200);
 
             this.updatedToken = response.body;
@@ -167,14 +182,20 @@ defineSupportCode(({
         Assert.strictEqual(this.updatedToken.description, this.newDescription);
     });
 
-    Then(/^the token's 'last used' property will not be updated$/, function step() {
-        Assert.strictEqual(this.updatedToken.lastUsed, this.testToken.lastUsed);
-    });
+    Then(
+        /^the token's 'last used' property will not be updated$/,
+        function step() {
+            Assert.strictEqual(
+                this.updatedToken.lastUsed,
+                this.testToken.lastUsed
+            );
+        }
+    );
 
     When(/^he revokes the token$/, function step() {
         return request({
             uri: `${this.instance}/${this.namespace}/tokens/${this.testToken.id}`,
-            method: 'DELETE',
+            method: "DELETE",
             auth: {
                 bearer: this.jwt
             }
@@ -188,12 +209,12 @@ defineSupportCode(({
     When(/^he refreshes the token$/, function step() {
         return request({
             uri: `${this.instance}/${this.namespace}/tokens/${this.testToken.id}/refresh`,
-            method: 'PUT',
+            method: "PUT",
             auth: {
                 bearer: this.jwt
             },
             json: true
-        }).then((response) => {
+        }).then(response => {
             Assert.strictEqual(response.statusCode, 200);
 
             this.updatedToken = response.body;
