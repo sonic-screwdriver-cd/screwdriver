@@ -6,3 +6,13 @@ rules:
     complexity: "warn"
     max-params: "warn"
     max-statements: "warn"
+    prefer-destructuring:
+    - "warn"
+    # - array: false
+    #   object: true
+    # - VariableDeclarator:
+    #     array: false
+    #     object: true
+    #   AssignmentExpression:
+    #     array: false
+    #     object: true
