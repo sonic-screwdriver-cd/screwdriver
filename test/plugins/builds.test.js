@@ -482,6 +482,7 @@ describe('build plugin test', () => {
                     username: id,
                     getPermissions: sinon.stub().resolves({ push: true })
                 };
+                const noStepsBuild = testBuild
                 const expected = hoek.applyToDefaults(testBuild, { status: 'ABORTED' });
                 const options = {
                     method: 'PUT',
@@ -498,7 +499,9 @@ describe('build plugin test', () => {
                 jobMock.pipeline = sinon.stub().resolves(pipelineMock)();
                 buildMock.job = sinon.stub().resolves(jobMock)();
                 buildFactoryMock.get.resolves(buildMock);
-                buildMock.toJson.returns(expected);
+                delete noStepsBuild.steps;
+                buildMock.toJson.returns(noStepsBuild);
+                buildMock.toJsonWithSteps.resolves(expected);
                 jobFactoryMock.get.resolves(jobMock);
                 userFactoryMock.get.resolves(userMock);
 

@@ -14,7 +14,7 @@ sinon.assert.expose(assert, { prefix: '' });
 const decorateBuildMock = (build) => {
     const mock = hoek.clone(build);
 
-    mock.toJson = sinon.stub().returns(build);
+    mock.toJsonWithSteps = sinon.stub().resolves(build);
 
     return mock;
 };

@@ -81,7 +81,7 @@ function getPipelineHealth(pipeline, eventFactory) {
                     if (builds.length) {
                         // The events are sorted by most recent first. Need to reverse the order
                         // to allow for matching with workflow job on the UI
-                        lastBuilds = builds.map(b => b.toJson()).reverse();
+                        lastBuilds = Promise.all(builds.map(b => b.toJsonWithSteps())).then(builds => builds.reverse());
                     }
 
                     return lastBuilds;

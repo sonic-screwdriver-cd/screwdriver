@@ -10,7 +10,7 @@
     "parameters": {},
     "stats": {},
     "environment": {
-      "FOO": "bar"
+        "FOO": "bar"
     },
     "steps": [
         {
