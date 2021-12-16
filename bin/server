@@ -137,6 +137,8 @@ const executor = new ExecutorPlugin({
 
 executor.name = executorConfig.plugin;
 
+const queueConfig = executorConfig.get('queue');
+
 // Setup Model Factories
 const commandFactory = Models.CommandFactory.getInstance({
     datastore,
@@ -254,7 +256,8 @@ datastore.setup(datastoreConfig.ddlSyncEnabled).then(() =>
         validator: {
             externalJoin: true,
             notificationsValidationErr
-        }
+        },
+        queueConfig
     })
         .then(instance => logger.info('Server running at %s', instance.info.uri))
         .catch(err => {

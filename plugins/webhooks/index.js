@@ -1163,6 +1163,11 @@ const webhooksPlugin = {
                     let skipMessage;
                     let parsedHookId = '';
 
+                    const executor = request.server.app.executorQueue;
+                    const token = executor.tokenGen({
+                        scope: ['api']
+                    });
+
                     try {
                         const parsed = await scm.parseHook(request.headers, request.payload);
 
