@@ -2900,7 +2900,7 @@ describe('build plugin test', () => {
 
                     return newServer.inject(options).then(() => {
                         assert.notCalled(eventFactoryMock.create);
-                        assert.calledOnce(buildFactoryMock.getLatestBuilds);
+                        assert.calledTwice(buildFactoryMock.getLatestBuilds);
                         assert.calledTwice(buildC.update);
                         assert.calledOnce(updatedBuildC.start);
                     });
@@ -3015,7 +3015,7 @@ describe('build plugin test', () => {
 
                     return newServer.inject(options).then(() => {
                         assert.notCalled(eventFactoryMock.create);
-                        assert.calledOnce(buildFactoryMock.getLatestBuilds);
+                        assert.calledTwice(buildFactoryMock.getLatestBuilds);
                         assert.calledOnce(buildFactoryMock.create);
                         assert.calledWith(buildFactoryMock.create, jobCConfig);
                         assert.calledOnce(buildC.update);
@@ -3226,7 +3226,7 @@ describe('build plugin test', () => {
 
                     return newServer.inject(options).then(() => {
                         assert.notCalled(eventFactoryMock.create);
-                        assert.calledOnce(buildFactoryMock.getLatestBuilds);
+                        assert.calledTwice(buildFactoryMock.getLatestBuilds);
                         assert.calledOnce(buildFactoryMock.create);
                         assert.notCalled(buildC.update);
                         assert.notCalled(updatedBuildC.start);
@@ -3896,7 +3896,7 @@ describe('build plugin test', () => {
                     return newServer.inject(options).then(() => {
                         assert.calledOnce(eventFactoryMock.create);
                         assert.calledWith(eventFactoryMock.create, eventConfig);
-                        assert.calledOnce(buildFactoryMock.getLatestBuilds);
+                        assert.calledTwice(buildFactoryMock.getLatestBuilds);
                         assert.calledOnce(buildFactoryMock.create);
                         assert.calledOnce(buildC.update);
                         assert.calledOnce(updatedBuildC.start);
