@@ -1107,7 +1107,7 @@ const buildsPlugin = {
                         joinListNames,
                         pipelineId: externalPipelineId,
                         buildFactory,
-                        joinList
+                        triggerName
                     });
 
                     // Check if external pipeline has Join
