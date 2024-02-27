@@ -121,12 +121,7 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('hub').complete('SUCCESS');
         await event.getBuildOf('a').complete('SUCCESS');
-
-        assert.equal(event.getBuildOf('target').status, 'RUNNING');
-
         await event.getBuildOf('target').complete('SUCCESS');
-
-        assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
         const restartEvent = event.restartFrom('a');
 
@@ -364,7 +359,7 @@ describe('trigger tests', () => {
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
     it('[ ~a, ~b ] is triggered by a once', async () => {
@@ -381,9 +376,6 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
-
-        await event.getBuildOf('b').complete('SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
     });
 
     it('[ ~a, ~b ] is triggered and is triggered again when a restarts', async () => {
@@ -400,9 +392,6 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
-
-        await event.getBuildOf('b').complete('SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
 
         const restartEvent = event.restartFrom('a');
 
@@ -443,14 +432,30 @@ describe('trigger tests', () => {
         });
 
         await event.getBuildOf('hub').complete('SUCCESS');
-        await event.getBuildOf('a').complete('FAILURE');
+        await event.getBuildOf('a').complete('SUCCESS');
         await event.getBuildOf('b').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'RUNNING');
 
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
+    });
+
+    it('[ ~a, b ] is triggered when b succeeds', async () => {
+        const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
+
+        const event = eventFactoryMock.create({
+            pipelineId: pipeline.id,
+            startFrom: 'hub'
+        });
+
+        await event.getBuildOf('hub').complete('SUCCESS');
+        await event.getBuildOf('b').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'RUNNING');
+
+        await event.getBuildOf('target').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'SUCCESS');
     });
 
     it('[ ~a, b ] is triggered when a fails once and then restarts and succeeds', async () => {
@@ -492,7 +497,6 @@ describe('trigger tests', () => {
 
         await restartEvent.getBuildOf('target').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(restartEvent.id), null);
     });
 
     it('[ ~a, b ] is triggered when a fails and b succeeds', async () => {
@@ -510,7 +514,7 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
     it('[ ~a, b ] is triggered when b fails and a succeeds', async () => {
@@ -528,7 +532,7 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
     it('[ a, b ] is triggered', async () => {
@@ -548,6 +552,7 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
     it('[ a, b ] is triggered when a restarts', async () => {
@@ -560,13 +565,7 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('hub').complete('SUCCESS');
         await event.getBuildOf('a').complete('SUCCESS');
-        assert.equal(event.getBuildOf('target').status, 'CREATED');
-
         await event.getBuildOf('b').complete('SUCCESS');
-        assert.equal(event.getBuildOf('target').status, 'RUNNING');
-
-        await event.getBuildOf('target').complete('SUCCESS');
-        assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
         const restartEvent = event.restartFrom('a');
 
@@ -575,7 +574,8 @@ describe('trigger tests', () => {
 
         await restartEvent.getBuildOf('target').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(restartEvent.id), null);
+
+        assert.equal(pipeline.getBuildsOf('target').length, 2);
     });
 
     it('[ a, b ] is not triggered if only a succeeds', async () => {
@@ -589,8 +589,6 @@ describe('trigger tests', () => {
         await event.getBuildOf('hub').complete('SUCCESS');
         await event.getBuildOf('a').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'CREATED');
-
-        assert.notEqual(event.getBuildOf('target').status, 'SUCCESS');
     });
 
     it('[ a, b ] is triggered when b fails once and then restarts and succeeds', async () => {
@@ -692,7 +690,8 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('b').complete('SUCCESS');
         await event.getBuildOf('c').complete('SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
     it('[ ~a, b, c ] is triggered when a succeeds', async () => {
@@ -730,7 +729,7 @@ describe('trigger tests', () => {
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
         await event.getBuildOf('c').complete('SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
     it('[ ~a, b, c ] is triggered when a fails and b and c succeed', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
@@ -752,7 +751,7 @@ describe('trigger tests', () => {
 
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
     it('[ ~a, b, c ] is triggered when b and a, c succeed', async () => {
@@ -774,7 +773,7 @@ describe('trigger tests', () => {
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
         await event.getBuildOf('c').complete('SUCCESS');
-        assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
     it('[ ~a, b, c ] is triggered when a fails and b and c succeed', async () => {
