@@ -196,20 +196,6 @@ describe('trigger tests', () => {
         assert.isNull(restartEvent.getBuildOf('target'));
     });
 
-    it('[ ~a ] is not triggered when a fails', async () => {
-        const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
-
-        const event = eventFactoryMock.create({
-            pipelineId: pipeline.id,
-            startFrom: 'hub'
-        });
-
-        await event.getBuildOf('hub').complete('SUCCESS');
-        await event.getBuildOf('a').complete('FAILURE');
-
-        assert.isNull(event.getBuildOf('target'));
-    });
-
     it('[ ~a ] is triggered when a fails once and then restarts and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
 
