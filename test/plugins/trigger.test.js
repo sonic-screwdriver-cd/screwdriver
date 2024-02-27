@@ -9,6 +9,8 @@ const {
     PipelineFactoryMock,
     EventFactoryMock,
     BuildFactoryMock,
+    StageBuildFactoryMock,
+    StageFactoryMock,
     JobFactoryMock,
     LockMock
 } = require('./trigger.test.helper');
@@ -18,6 +20,8 @@ describe('trigger tests', () => {
     let buildFactoryMock = new BuildFactoryMock();
     let pipelineFactoryMock = new PipelineFactoryMock();
     let eventFactoryMock = new EventFactoryMock();
+    let stageBuildFactoryMock = new StageBuildFactoryMock();
+    let stageFactoryMock = new StageFactoryMock();
     let jobFactoryMock = new JobFactoryMock();
     let triggerFactory = new TriggerFactoryMock();
     const lockMock = new LockMock();
@@ -48,6 +52,8 @@ describe('trigger tests', () => {
         buildFactoryMock = new BuildFactoryMock(server);
         pipelineFactoryMock = new PipelineFactoryMock(server);
         eventFactoryMock = new EventFactoryMock(server);
+        stageBuildFactoryMock = new StageBuildFactoryMock(server);
+        stageFactoryMock = new StageFactoryMock(server);
         jobFactoryMock = new JobFactoryMock(server);
         triggerFactory = new TriggerFactoryMock(server);
 
@@ -55,6 +61,8 @@ describe('trigger tests', () => {
             buildFactory: buildFactoryMock,
             pipelineFactory: pipelineFactoryMock,
             eventFactory: eventFactoryMock,
+            stageBuildFactory: stageBuildFactoryMock,
+            stageFactory: stageFactoryMock,
             jobFactory: jobFactoryMock,
             bannerFactory: bannerFactoryMock,
             triggerFactory
@@ -96,7 +104,7 @@ describe('trigger tests', () => {
     it('[ ~a ] is triggered when a succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -114,7 +122,7 @@ describe('trigger tests', () => {
     it('[ ~a ] is triggered and is triggered again when a restarts', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -128,7 +136,7 @@ describe('trigger tests', () => {
 
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('SUCCESS');
 
@@ -142,7 +150,7 @@ describe('trigger tests', () => {
     it('Multiple [ ~a ] are triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a-multiple.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -163,7 +171,7 @@ describe('trigger tests', () => {
     it('[ ~a ] is not triggered when a fails', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -175,7 +183,7 @@ describe('trigger tests', () => {
     it('[ ~a ] is not triggered when a restarts and fails', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -189,7 +197,7 @@ describe('trigger tests', () => {
 
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('FAILURE');
 
@@ -199,7 +207,7 @@ describe('trigger tests', () => {
     it('[ ~a ] is triggered when a fails once and then restarts and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -209,7 +217,7 @@ describe('trigger tests', () => {
 
         assert.isNull(event.getBuildOf('target'));
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('SUCCESS');
 
@@ -223,7 +231,7 @@ describe('trigger tests', () => {
     it('[ a ] is triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -241,7 +249,7 @@ describe('trigger tests', () => {
     it('[ a ] is triggered and is triggered again when a restarts', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -255,7 +263,7 @@ describe('trigger tests', () => {
 
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('SUCCESS');
 
@@ -269,7 +277,7 @@ describe('trigger tests', () => {
     it('[ a ] is not triggered when a fails', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -282,7 +290,7 @@ describe('trigger tests', () => {
     it('[ a ] is not triggered when a restarts and fails', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -296,7 +304,7 @@ describe('trigger tests', () => {
 
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('FAILURE');
 
@@ -306,7 +314,7 @@ describe('trigger tests', () => {
     it('Multiple [ a ] are triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a-multiple.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -327,7 +335,7 @@ describe('trigger tests', () => {
     it('[ a ] is triggered when a fails once and then restarts and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -337,7 +345,7 @@ describe('trigger tests', () => {
 
         assert.isNull(event.getBuildOf('target'));
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('SUCCESS');
 
@@ -351,7 +359,7 @@ describe('trigger tests', () => {
     it('[ ~a, ~b ] is triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_~b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -370,7 +378,7 @@ describe('trigger tests', () => {
     it('[ ~a, ~b ] is triggered by a once', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_~b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -389,7 +397,7 @@ describe('trigger tests', () => {
     it('[ ~a, ~b ] is triggered and is triggered again when a restarts', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_~b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -404,7 +412,7 @@ describe('trigger tests', () => {
         await event.getBuildOf('b').complete('SUCCESS');
         assert.equal(eventFactoryMock.getRunningBuild(event.id), null);
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
@@ -418,7 +426,7 @@ describe('trigger tests', () => {
     it('[ ~a, ~b ] is triggered when a fails', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_~b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -437,7 +445,7 @@ describe('trigger tests', () => {
     it('[ ~a, b ] is triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -456,7 +464,7 @@ describe('trigger tests', () => {
     it('[ ~a, b ] is triggered when a fails once and then restarts and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -464,7 +472,7 @@ describe('trigger tests', () => {
         await event.getBuildOf('hub').complete('SUCCESS');
         await event.getBuildOf('a').complete('FAILURE');
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
@@ -477,7 +485,7 @@ describe('trigger tests', () => {
     it('[ ~a, b ] is triggered when b fails once and then restarts and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -485,7 +493,7 @@ describe('trigger tests', () => {
         await event.getBuildOf('hub').complete('SUCCESS');
         await event.getBuildOf('b').complete('FAILURE');
 
-        const restartEvent = event.restartFrom('b');
+        const restartEvent = await event.restartFrom('b');
 
         await restartEvent.getBuildOf('b').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
@@ -498,7 +506,7 @@ describe('trigger tests', () => {
     it('[ ~a, b ] is triggered when a fails and b succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -516,7 +524,7 @@ describe('trigger tests', () => {
     it('[ ~a, b ] is triggered when b fails and a succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -534,7 +542,7 @@ describe('trigger tests', () => {
     it('[ a, b ] is triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -553,7 +561,7 @@ describe('trigger tests', () => {
     it('[ a, b ] is triggered when a restarts', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -568,7 +576,7 @@ describe('trigger tests', () => {
         await event.getBuildOf('target').complete('SUCCESS');
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
 
-        const restartEvent = event.restartFrom('a');
+        const restartEvent = await event.restartFrom('a');
 
         await restartEvent.getBuildOf('a').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
@@ -581,7 +589,7 @@ describe('trigger tests', () => {
     it('[ a, b ] is not triggered if only a succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -596,7 +604,7 @@ describe('trigger tests', () => {
     it('[ a, b ] is triggered when b fails once and then restarts and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -610,7 +618,7 @@ describe('trigger tests', () => {
         assert.equal(build.status, 'CREATED');
         assert.isNull(event.getBuildOf('target'));
 
-        const restartEvent = event.restartFrom('b');
+        const restartEvent = await event.restartFrom('b');
 
         await restartEvent.getBuildOf('b').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
@@ -623,7 +631,7 @@ describe('trigger tests', () => {
     it('[ a, b ] is not triggered when b was failed', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -641,7 +649,7 @@ describe('trigger tests', () => {
     it('[ a, b ] is not triggered when a was failed and b succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -657,7 +665,7 @@ describe('trigger tests', () => {
     it('[ a, b ] is not triggered when a was failed and b restarted and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -669,7 +677,7 @@ describe('trigger tests', () => {
         await event.getBuildOf('b').complete('SUCCESS');
         assert.isNull(event.getBuildOf('target'));
 
-        const restartEvent = event.restartFrom('b');
+        const restartEvent = await event.restartFrom('b');
 
         await restartEvent.getBuildOf('b').complete('SUCCESS');
         assert.isNull(restartEvent.getBuildOf('target'));
@@ -678,7 +686,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is triggered by a once', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -698,7 +706,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is triggered when a succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -714,7 +722,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is triggered when b and a, c succeed', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -735,7 +743,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is triggered when a fails and b and c succeed', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -758,7 +766,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is triggered when b and a, c succeed', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -780,7 +788,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is triggered when a fails and b and c succeed', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -803,7 +811,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is not triggered when a and c fail but b succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -823,7 +831,7 @@ describe('trigger tests', () => {
     it('[ ~a, b, c ] is triggered when a and c fails, b succeeds, and then c restarts and succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a_b_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -838,7 +846,7 @@ describe('trigger tests', () => {
         await event.getBuildOf('c').complete('FAILURE');
         assert.isNull(event.getBuildOf('target'));
 
-        const restartEvent = event.restartFrom('c');
+        const restartEvent = await event.restartFrom('c');
 
         await restartEvent.getBuildOf('c').complete('SUCCESS');
         assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
@@ -851,7 +859,7 @@ describe('trigger tests', () => {
     xit('[ a, c ] is not triggered when restart a b and only a was completed', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_c.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: pipeline.id,
             startFrom: 'hub'
         });
@@ -859,7 +867,7 @@ describe('trigger tests', () => {
         // run all builds
         await buildFactoryMock.run();
 
-        const restartEvent = event.restartFrom('hub');
+        const restartEvent = await event.restartFrom('hub');
 
         await restartEvent.getBuildOf('hub').complete('SUCCESS');
         await restartEvent.getBuildOf('a').complete('SUCCESS');
@@ -872,7 +880,7 @@ describe('trigger tests', () => {
         const parentPipeline = await pipelineFactoryMock.createFromFile('~sd@1:a-parent.yaml');
         const childPipeline = await pipelineFactoryMock.createFromFile('~sd@1:a-child.yaml');
 
-        const parentEvent = eventFactoryMock.create({
+        const parentEvent = await eventFactoryMock.create({
             pipelineId: parentPipeline.id,
             startFrom: 'hub'
         });
@@ -892,7 +900,7 @@ describe('trigger tests', () => {
         const parentPipeline = await pipelineFactoryMock.createFromFile('sd@1:a-parent.yaml');
         const childPipeline = await pipelineFactoryMock.createFromFile('sd@1:a-child.yaml');
 
-        const parentEvent = eventFactoryMock.create({
+        const parentEvent = await eventFactoryMock.create({
             pipelineId: parentPipeline.id,
             startFrom: 'hub'
         });
@@ -913,7 +921,7 @@ describe('trigger tests', () => {
         const childPipeline1 = await pipelineFactoryMock.createFromFile('~sd@1:a-child.yaml');
         const childPipeline2 = await pipelineFactoryMock.createFromFile('~sd@1:a-child.yaml');
 
-        eventFactoryMock.create({
+        await eventFactoryMock.create({
             pipelineId: parentPipeline.id,
             startFrom: 'hub'
         });
@@ -933,7 +941,7 @@ describe('trigger tests', () => {
 
         await pipelineFactoryMock.createFromFile('~sd@2:a-child.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: parentPipeline.id,
             startFrom: 'hub'
         });
@@ -949,7 +957,7 @@ describe('trigger tests', () => {
 
         await pipelineFactoryMock.createFromFile('sd@2:a-child.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: parentPipeline.id,
             startFrom: 'hub'
         });
@@ -966,7 +974,7 @@ describe('trigger tests', () => {
         await pipelineFactoryMock.createFromFile('sd@2:a_sd@3:a-child.yaml');
         await pipelineFactoryMock.createFromFile('sd@2:a_sd@3:a-child.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: parentPipeline.id,
             startFrom: 'hub'
         });
@@ -982,7 +990,7 @@ describe('trigger tests', () => {
 
         await pipelineFactoryMock.createFromFile('sd@2:a_sd@2:b_sd@2:c-child.yaml');
 
-        const event = eventFactoryMock.create({
+        const event = await eventFactoryMock.create({
             pipelineId: parentPipeline.id,
             startFrom: 'hub'
         });
@@ -993,11 +1001,11 @@ describe('trigger tests', () => {
         assert.equal(event.getBuildOf('target').status, 'SUCCESS');
     });
 
-    describe('Tests for behavior not ideal', () => {
-        it('[ a, c ] is triggered when restart a b and only a was completed', async () => {
-            const pipeline = await pipelineFactoryMock.createFromFile('a_c.yaml');
+    describe('Stage tests', () => {
+        it('test sample', async () => {
+            const pipeline = await pipelineFactoryMock.createFromFile('stage-sample.yaml');
 
-            const event = eventFactoryMock.create({
+            const event = await eventFactoryMock.create({
                 pipelineId: pipeline.id,
                 startFrom: 'hub'
             });
@@ -1005,7 +1013,26 @@ describe('trigger tests', () => {
             // run all builds
             await buildFactoryMock.run();
 
-            const restartEvent = event.restartFrom('hub');
+            assert.equal(event.getBuildOf('stage@red:setup').status, 'SUCCESS');
+            assert.equal(event.getBuildOf('b').status, 'SUCCESS');
+            assert.equal(event.getBuildOf('stage@red:teardown').status, 'SUCCESS');
+            assert.equal(event.getBuildOf('target').status, 'SUCCESS');
+        });
+    });
+
+    describe('Tests for behavior not ideal', () => {
+        it('[ a, c ] is triggered when restart a b and only a was completed', async () => {
+            const pipeline = await pipelineFactoryMock.createFromFile('a_c.yaml');
+
+            const event = await eventFactoryMock.create({
+                pipelineId: pipeline.id,
+                startFrom: 'hub'
+            });
+
+            // run all builds
+            await buildFactoryMock.run();
+
+            const restartEvent = await event.restartFrom('hub');
 
             await restartEvent.getBuildOf('hub').complete('SUCCESS');
             await restartEvent.getBuildOf('a').complete('SUCCESS');
