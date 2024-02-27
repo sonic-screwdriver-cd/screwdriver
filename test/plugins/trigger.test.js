@@ -93,7 +93,7 @@ describe('trigger tests', () => {
         server = null;
     });
 
-    it('[ ~a ] is triggered when a　succeeds', async () => {
+    it('[ ~a ] is triggered when a succeeds', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a.yaml');
 
         const event = eventFactoryMock.create({
