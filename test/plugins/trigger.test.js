@@ -543,6 +543,118 @@ describe('trigger tests', () => {
         assert.equal(pipeline.getBuildsOf('target').length, 1);
     });
 
+    it('[ ~a, b ] is triggered', async () => {
+        const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
+
+        const event = await eventFactoryMock.create({
+            pipelineId: pipeline.id,
+            startFrom: 'hub'
+        });
+
+        await event.getBuildOf('hub').complete('SUCCESS');
+        await event.getBuildOf('a').complete('SUCCESS');
+        await event.getBuildOf('b').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'RUNNING');
+
+        await event.getBuildOf('target').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'SUCCESS');
+
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
+    });
+
+    it('[ ~a, b ] is triggered when b succeeds', async () => {
+        const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
+
+        const event = await eventFactoryMock.create({
+            pipelineId: pipeline.id,
+            startFrom: 'hub'
+        });
+
+        await event.getBuildOf('hub').complete('SUCCESS');
+        await event.getBuildOf('b').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'RUNNING');
+
+        await event.getBuildOf('target').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'SUCCESS');
+    });
+
+    it('[ ~a, b ] is triggered when a fails once and then restarts and succeeds', async () => {
+        const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
+
+        const event = await eventFactoryMock.create({
+            pipelineId: pipeline.id,
+            startFrom: 'hub'
+        });
+
+        await event.getBuildOf('hub').complete('SUCCESS');
+        await event.getBuildOf('a').complete('FAILURE');
+
+        const restartEvent = await event.restartFrom('a');
+
+        await restartEvent.getBuildOf('a').complete('SUCCESS');
+        assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
+
+        await restartEvent.getBuildOf('target').complete('SUCCESS');
+        assert.equal(restartEvent.getBuildOf('target').status, 'SUCCESS');
+        assert.equal(eventFactoryMock.getRunningBuild(restartEvent.id), null);
+    });
+
+    it('[ ~a, b ] is triggered when b fails once and then restarts and succeeds', async () => {
+        const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
+
+        const event = await eventFactoryMock.create({
+            pipelineId: pipeline.id,
+            startFrom: 'hub'
+        });
+
+        await event.getBuildOf('hub').complete('SUCCESS');
+        await event.getBuildOf('b').complete('FAILURE');
+
+        const restartEvent = await event.restartFrom('b');
+
+        await restartEvent.getBuildOf('b').complete('SUCCESS');
+        assert.equal(restartEvent.getBuildOf('target').status, 'RUNNING');
+
+        await restartEvent.getBuildOf('target').complete('SUCCESS');
+        assert.equal(restartEvent.getBuildOf('target').status, 'SUCCESS');
+    });
+
+    it('[ ~a, b ] is triggered when a fails and b succeeds', async () => {
+        const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
+
+        const event = await eventFactoryMock.create({
+            pipelineId: pipeline.id,
+            startFrom: 'hub'
+        });
+
+        await event.getBuildOf('hub').complete('SUCCESS');
+        await event.getBuildOf('a').complete('FAILURE');
+        await event.getBuildOf('b').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'RUNNING');
+
+        await event.getBuildOf('target').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'SUCCESS');
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
+    });
+
+    it('[ ~a, b ] is triggered when b fails and a succeeds', async () => {
+        const pipeline = await pipelineFactoryMock.createFromFile('~a_b.yaml');
+
+        const event = await eventFactoryMock.create({
+            pipelineId: pipeline.id,
+            startFrom: 'hub'
+        });
+
+        await event.getBuildOf('hub').complete('SUCCESS');
+        await event.getBuildOf('b').complete('FAILURE');
+        await event.getBuildOf('a').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'RUNNING');
+
+        await event.getBuildOf('target').complete('SUCCESS');
+        assert.equal(event.getBuildOf('target').status, 'SUCCESS');
+        assert.equal(pipeline.getBuildsOf('target').length, 1);
+    });
+
     it('[ a, b ] is triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b.yaml');
 
