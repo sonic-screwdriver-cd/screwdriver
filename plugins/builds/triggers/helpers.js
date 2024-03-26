@@ -177,6 +177,7 @@ async function createEvent(config) {
         username: realAdmin.username,
         sha,
         ...(parentEventId ? { parentEventId } : {}),
+        // for backward compatibility, this field is optional
         ...(parentBuilds ? { parentBuilds } : {}),
         ...(groupEventId ? { groupEventId } : {})
     };
