@@ -55,7 +55,6 @@ async function deleteBuild(buildConfig, buildFactory) {
  * @return {Promise<null>}                                  Resolves to the newly created build or null
  */
 async function triggerNextJobs(config, app) {
-    // const { pipeline: currentPipeline, job: currentJob, build: currentBuild, stage } = config;
     const currentPipeline = config.pipeline;
     const currentJob = config.job;
     const currentBuild = config.build;
@@ -224,7 +223,7 @@ const buildsPlugin = {
 
                         //   if nextBuild is stage teardown, just return nextBuild
                         if (current.stage) {
-                            const buildDeletePromises = await handleStageFailure({
+                            const buildDeletePromises = handleStageFailure({
                                 nextJobName,
                                 current,
                                 buildConfig,

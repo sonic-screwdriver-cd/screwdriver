@@ -1,6 +1,7 @@
 'use strict';
 
 const { createInternalBuild, Status } = require('./helpers');
+
 /**
  * @typedef {import('screwdriver-models').BuildFactory} BuildFactory
  * @typedef {import('screwdriver-models').JobFactory} JobFactory
