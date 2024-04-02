@@ -402,11 +402,13 @@ function createParentBuildsObj(config) {
  * - parentBuilds: parent build information
  * - joinListNames: array of join jobs
  * - joinParentBuilds: parent build information for join jobs
- * @param  {Object} joinObj        Join object
- * @param  {Object} current        Object holding current event, job & pipeline
- * @param  {String} nextJobName    Next job's name
- * @param  {Number} nextPipelineId Next job's Pipeline Id
- * @return {ParsedJobInfo}                With above information
+ * @param  {Record<string, Job>} joinObj        Join object
+ * @param  {BuildModel} currentBuild        Object holding current event, job & pipeline
+ * @param  {PipelineModel} currentPipeline        Object holding current event, job & pipeline
+ * @param  {Job} currentJob        Object holding current event, job & pipeline
+ * @param  {string} nextJobName    Next job's name
+ * @param  {number} nextPipelineId Next job's Pipeline Id
+ * @return {import("./types/index").JobInfo}                With above information
  */
 function parseJobInfo({ joinObj, currentBuild, currentPipeline, currentJob, nextJobName, nextPipelineId }) {
     const joinList = joinObj && joinObj[nextJobName] && joinObj[nextJobName].join ? joinObj[nextJobName].join : [];

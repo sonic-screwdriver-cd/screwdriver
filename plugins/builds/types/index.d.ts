@@ -1,57 +1,21 @@
 import {BuildModel, EventModel, PipelineModel, StageModel} from './models.js';
-
-export type JoinPipelines = Record<string, Jobs>;
-
-export type Jobs = {
-    jobs: Record<string, Job>;
-    event: string;
-};
-
-export type Job = {
-    id: string;
-    join: Array<Join>;
-    isExternal: boolean;
-};
-
-export type Join = {
-    name: string;
-    id: number;
-};
-
-export type ParsedJobInfo = {
-    parentBuilds: Record<string, {
-        eventId: number;
-        jobs: Record<string, number>,
-    }>,
-    joinListNames: Array<string>,
-    joinParentBuilds: Record<string, {
-        eventId: object;
-        jobs: Record<string, object>,
-    }>,
-}
-
-export type ParentBuild = {
-    eventId: number;
-    jobs: Record<string, number>,
-}
+import {BuildFactory, PipelineFactory, EventFactory, StageBuildFactory, StageFactory, JobFactory, BannerFactory, TriggerFactory} from 'screwdriver-models';
 
 // -----------------------------------------------------------------------------
-//      Config
+//      Build API Plugin Server
 // -----------------------------------------------------------------------------
+/**
+ * These are the assigned arguments of hapi servers expose function
+ */
 export type ServerConfig = {
     pipeline: PipelineModel;
-    job: Job;
+    job: JoinJob;
     build: BuildModel;
     username: number;
     scmContext: string;
     event: EventModel;
     stage: StageModel | null;
 };
-
-// -----------------------------------------------------------------------------
-//      App
-// -----------------------------------------------------------------------------
-import {BuildFactory, PipelineFactory, EventFactory, StageBuildFactory, StageFactory, JobFactory, BannerFactory, TriggerFactory} from 'screwdriver-models';
 
 export type ServerApp = {
     buildFactory: BuildFactory;
@@ -63,3 +27,47 @@ export type ServerApp = {
     bannerFactory: BannerFactory;
     triggerFactory: TriggerFactory;
 };
+
+// -----------------------------------------------------------------------------
+//      JoinPipelines
+// -----------------------------------------------------------------------------
+/**
+ * JoinPipelines is used in 'createJoinObject' in 'helper.js'
+ */
+export type JoinPipelines = Record<string, JoinJobs>;
+
+export type JoinJobs = {
+    jobs: Record<string, JoinJob>;
+    event: string;
+};
+
+export type JoinJob = {
+    id: string;
+    join: Array<Join>;
+    isExternal: boolean;
+};
+
+export type Join = {
+    name: string;
+    id: number;
+};
+
+// -----------------------------------------------------------------------------
+//      JobInfo
+// -----------------------------------------------------------------------------
+/**
+ * JobInfo is used in 'parseJobInfo' in 'helper.js'
+ */
+export type JobInfo = {
+    parentBuilds: Record<string, ParentBuild>,
+    joinListNames: Array<string>,
+    joinParentBuilds: Record<string, {
+        eventId: object;
+        jobs: Record<string, object>,
+    }>,
+}
+
+export type ParentBuild = {
+    eventId: number;
+    jobs: Record<string, number>,
+}

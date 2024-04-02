@@ -1,15 +1,19 @@
 'use strict';
 
 const { createInternalBuild, Status } = require('./helpers');
-
 /**
+ * @typedef {import('screwdriver-models').BuildFactory} BuildFactory
+ * @typedef {import('screwdriver-models').JobFactory} JobFactory
+ * @typedef {import('screwdriver-models').PipelineFactory} PipelineFactory
+ * @typedef {import('screwdriver-models/lib/pipeline').PipelineModel} PipelineModel
+ * @typedef {import('screwdriver-models/lib/event').EventModel} EventModel
  * @typedef {import('screwdriver-models/lib/build').BuildModel} BuildModel
  */
 /**
- * @property {import('screwdriver-models').BuildFactory} buildFactory
- * @property {import('screwdriver-models').JobFactory} jobFactory
- * @property {import('screwdriver-models').PipelineFactory} pipelineFactory
- * @property {import('screwdriver-models/lib/pipeline').PipelineModel} currentPipeline
+ * @property {BuildFactory} buildFactory
+ * @property {JobFactory} jobFactory
+ * @property {PipelineFactory} pipelineFactory
+ * @property {PipelineModel} currentPipeline
  * @property {EventModel} currentEvent
  * @property {BuildModel} currentBuild
  * @property {number} username
@@ -36,8 +40,8 @@ class OrTrigger {
 
     /**
      * Trigger the next jobs of the current job
-     * @param {string} nextJobName Server app object
-     * @param {string} nextJobId    Configuration object
+     * @param {string} nextJobName                          Server app object
+     * @param {string} nextJobId                            Configuration object
      * @param {Record<string, ParentBuild>} parentBuilds
      * @return {Promise<BuildModel|null>}
      */
