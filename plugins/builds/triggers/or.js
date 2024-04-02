@@ -2,28 +2,64 @@
 
 const { createInternalBuild, Status } = require('./helpers');
 
-// =============================================================================
-//
-//      Function
-//
-// =============================================================================
+/**
+ * @typedef {import('screwdriver-models/lib/build').BuildModel} BuildModel
+ */
+/**
+ * @property {import('screwdriver-models').BuildFactory} buildFactory
+ * @property {import('screwdriver-models').JobFactory} jobFactory
+ * @property {import('screwdriver-models').PipelineFactory} pipelineFactory
+ * @property {import('screwdriver-models/lib/pipeline').PipelineModel} currentPipeline
+ * @property {EventModel} currentEvent
+ * @property {BuildModel} currentBuild
+ * @property {number} username
+ * @property {string} scmContext
+ */
 class OrTrigger {
+    /**
+     * Trigger the next jobs of the current job
+     * @param {import('../types/index').ServerApp} app                      Server app object
+     * @param {import('../types/index').ServerConfig} config              Configuration object
+     * @param {import('screwdriver-models/lib/event').EventModel} currentEvent
+     */
     constructor(app, config, currentEvent) {
-        this.eventFactory = app.eventFactory;
         this.buildFactory = app.buildFactory;
         this.jobFactory = app.jobFactory;
         this.pipelineFactory = app.pipelineFactory;
 
         this.currentPipeline = config.pipeline;
         this.currentEvent = currentEvent;
-        this.currentJob = config.job;
         this.currentBuild = config.build;
         this.username = config.username;
         this.scmContext = config.scmContext;
     }
 
+    /**
+     * Trigger the next jobs of the current job
+     * @param {string} nextJobName Server app object
+     * @param {string} nextJobId    Configuration object
+     * @param {Record<string, ParentBuild>} parentBuilds
+     * @return {Promise<BuildModel|null>}
+     */
     async run(nextJobName, nextJobId, parentBuilds) {
-        const internalBuildConfig = {
+        /** @type {BuildModel|null} */
+        const nextBuild = await this.buildFactory.get({
+            eventId: this.currentEvent.id,
+            jobId: nextJobId
+        });
+
+        if (nextBuild !== null) {
+            if (Status.isStarted(nextBuild.status)) {
+                return nextBuild;
+            }
+
+            nextBuild.status = Status.QUEUED;
+            await nextBuild.update();
+
+            return nextBuild.start();
+        }
+
+        return createInternalBuild({
             jobFactory: this.jobFactory,
             buildFactory: this.buildFactory,
             pipelineId: this.currentPipeline.id,
@@ -34,33 +70,10 @@ class OrTrigger {
             baseBranch: this.currentEvent.baseBranch || null,
             parentBuilds,
             parentBuildId: this.currentBuild.id
-        };
-
-        const existNextBuild = await this.buildFactory.get({
-            eventId: this.currentEvent.id,
-            jobId: nextJobId
         });
-
-        if (existNextBuild === null) {
-            return createInternalBuild(internalBuildConfig);
-        }
-
-        if (Status.isStarted(existNextBuild.status)) {
-            return existNextBuild;
-        }
-
-        existNextBuild.status = Status.QUEUED;
-        await existNextBuild.update();
-
-        return existNextBuild.start();
     }
 }
 
-// =============================================================================
-//
-//      module.exports
-//
-// =============================================================================
 module.exports = {
     OrTrigger
 };
