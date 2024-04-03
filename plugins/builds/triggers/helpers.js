@@ -672,6 +672,19 @@ function fillParentBuilds(parentBuilds, currentPipeline, currentEvent, builds, n
  * @param {Object}  current        Object holding current job's build, event data
  * @param {Object}  eventFactory   Object for querying DB for event data
  * @return { import('../types/index').JoinPipelines } Object representing join data for next jobs grouped by pipeline id
+ *
+ * @example
+ * >>> await createJoinObject(...)
+ * {
+ *   "pipeineId" :{
+ *     event: "externalEventId",
+ *     jobs: {
+ *       "nextJobName": {
+ *         "id": "jobId"
+ *         join: ["a", "b"]
+ *     }
+ *   }
+ * }
  */
 async function createJoinObject(nextJobs, current, eventFactory) {
     const { build, event } = current;
