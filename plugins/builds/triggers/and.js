@@ -66,7 +66,7 @@ class AndTrigger {
      * @return {Promise<BuildModel[]|null>}
      */
     async fetchFinishedBuilds(event, buildFactory, eventFactory, pipelineId) {
-        let finishedBuilds = await getFinishedBuilds(event, buildFactory);
+        const finishedBuilds = await getFinishedBuilds(event, buildFactory);
 
         if (event.parentEventId) {
             // FIXME: On restart cases parentEventId should be fetched
@@ -77,7 +77,7 @@ class AndTrigger {
                 pipelineId
             });
 
-            finishedBuilds = finishedBuilds.concat(parallelBuilds);
+            finishedBuilds.push(...parallelBuilds);
         }
 
         return finishedBuilds;
