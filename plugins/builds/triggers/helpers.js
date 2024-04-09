@@ -482,7 +482,6 @@ async function updateParentBuilds({ joinParentBuilds, nextBuild, build }) {
     // nextBuild.parentBuildId may be int or Array, so it needs to be flattened
     nextBuild.parentBuildId = Array.from(new Set([build.id, nextBuild.parentBuildId || []].flat()));
 
-    // FIXME: Is this needed ? Why not update once in handleNewBuild()
     return nextBuild.update();
 }
 
@@ -634,7 +633,6 @@ function fillParentBuilds(parentBuilds, currentPipeline, currentEvent, builds, n
                 } else if (nextEvent) {
                     if (+pid !== nextEvent.pipelineId) {
                         // parentBuild is remote triggered from external event
-                        // FIXME:: Will else condition ever be true ?
                         searchJob = `sd@${pid}:${searchJob}`;
                     }
                     workflowGraph = nextEvent.workflowGraph;
@@ -918,6 +916,19 @@ async function getJobId(jobName, pipelineId, jobFactory) {
     return job.id;
 }
 
+/**
+ *
+ * @param workflowGraph
+ * @param currentJobName
+ * @param nextJobName
+ * @return {boolean}
+ */
+function isOrTrigger(workflowGraph, currentJobName, nextJobName) {
+    return workflowGraph.edges.some(edge => {
+        return edge.src === currentJobName && edge.dest === nextJobName && edge.join !== true;
+    });
+}
+
 module.exports = {
     Status,
     parseJobInfo,
@@ -936,6 +947,7 @@ module.exports = {
     createEvent,
     deleteBuild,
     getJobId,
+    isOrTrigger,
     extractCurrentPipelineJoinData,
     extractExternalPipelineJoinData
 };
