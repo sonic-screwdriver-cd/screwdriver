@@ -140,10 +140,9 @@ class AndTrigger {
 
             newBuild = await createInternalBuild(internalBuildConfig);
         } else {
-            // nextBuild is not build model, so fetch proper build
             newBuild = await updateParentBuilds({
                 joinParentBuilds: parentBuilds,
-                nextBuild: await this.buildFactory.get(nextBuild.id),
+                nextBuild,
                 build: this.currentBuild
             });
         }

@@ -450,14 +450,22 @@ function parseJobInfo({ joinObj, currentBuild, currentPipeline, currentJob, next
  * @return {Promise}                            All finished builds
  */
 async function getFinishedBuilds(event, buildFactory) {
-    // FIXME: buildFactory.getLatestBuilds doesn't return build model
     const builds = await buildFactory.getLatestBuilds({ groupEventId: event.groupEventId, readOnly: false });
 
     builds.forEach(b => {
         try {
+            b.environment = JSON.parse(b.environment);
             b.parentBuilds = JSON.parse(b.parentBuilds);
+            b.stats = JSON.parse(b.stats);
+            b.meta = JSON.parse(b.meta);
+            if (b.parentBuildId) {
+                // parentBuildId could be the string '123', the number 123, or an array
+                b.parentBuildId = Array.isArray(b.parentBuildId)
+                    ? b.parentBuildId.map(Number)
+                    : [Number(b.parentBuildId)];
+            }
         } catch (err) {
-            logger.error(`Failed to parse parentBuilds for ${b.id}`);
+            logger.error(`Failed to parse objects for ${b.id}`);
         }
     });
 
