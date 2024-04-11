@@ -10,6 +10,8 @@ const { getFullStageJobName } = require('../../helper');
 /**
  * @typedef {import('screwdriver-models/lib/build').BuildModel} BuildModel
  * @typedef {import('screwdriver-models/lib/job').Job} Job
+ * @typedef {import('../types/index').JoinPipelines} JoinPipelines
+ * @typedef {import('../types/index').JoinJobs} JoinJobs
  */
 
 const Status = {
@@ -677,7 +679,7 @@ function fillParentBuilds(parentBuilds, currentPipeline, currentEvent, builds, n
  * @param {Array}   nextJobs       List of jobs to run next from workflow parser.
  * @param {Object}  current        Object holding current job's build, event data
  * @param {Object}  eventFactory   Object for querying DB for event data
- * @return { import('../types/index').JoinPipelines } Object representing join data for next jobs grouped by pipeline id
+ * @return {Promise<import('../types/index').JoinPipelines>} Object representing join data for next jobs grouped by pipeline id
  *
  * @example
  * >>> await createJoinObject(...)
@@ -868,44 +870,55 @@ function strToInt(text) {
 }
 
 /**
- * Categorize current pipeline and external pipeline (current handled as external) join data
+ * Extract a current pipeline's next jobs from pipeline join data
+ * (Next jobs triggered as external are not included)
  *
- * @param { Record<string, Jobs> } joinedPipelines
+ * @param {JoinPipelines} joinedPipelines
  * @param {number} currentPipelineId
- * @returns {Record<string, Jobs>}
+ * @returns {Record<string, import('../types/index').JoinJob>}
  */
 function extractCurrentPipelineJoinData(joinedPipelines, currentPipelineId) {
-    const currentPipelineJoinData = {};
+    const currentPipelineJoinData = joinedPipelines[currentPipelineId.toString()];
 
-    Object.entries(joinedPipelines).forEach(([joinedPipelineId, joinedPipeline]) => {
-        if (strToInt(joinedPipelineId) === currentPipelineId) {
-            currentPipelineJoinData[joinedPipelineId] = joinedPipeline;
-        }
-    });
+    if (currentPipelineJoinData === undefined) {
+        return {};
+    }
 
-    return currentPipelineJoinData;
+    return Object.fromEntries(Object.entries(currentPipelineJoinData.jobs).filter(([_, job]) => !job.isExternal));
 }
 
 /**
- * Categorize current pipeline and external pipeline (current handled as external) join data
+ * Extract next jobs in current and external pipelines from pipeline join data
  *
- * @param { Record<string, Jobs> } joinedPipelines
+ * @param {JoinPipelines} joinedPipelines
  * @param {number} currentPipelineId
- * @returns {Record<string, Jobs>}
+ * @returns {JoinPipelines}
  */
-function extractExternalPipelineJoinData(joinedPipelines, currentPipelineId) {
-    const externalPipelineJoinData = {};
+function extractExternalJoinData(joinedPipelines, currentPipelineId) {
+    const externalJoinData = {};
 
     Object.entries(joinedPipelines).forEach(([joinedPipelineId, joinedPipeline]) => {
-        const isCurrentPipeline = strToInt(joinedPipelineId) === currentPipelineId;
-        const currentPipelineAsExternal = Object.values(joinedPipeline.jobs).some(nextJob => nextJob.isExternal);
+        const isExternalPipeline = strToInt(joinedPipelineId) !== currentPipelineId;
 
-        if (currentPipelineAsExternal || !isCurrentPipeline) {
-            externalPipelineJoinData[joinedPipelineId] = joinedPipeline;
+        if (isExternalPipeline) {
+            externalJoinData[joinedPipelineId] = joinedPipeline;
+        } else {
+            const nextJobsTriggeredAsExternal = Object.entries(joinedPipeline.jobs).filter(
+                ([_, job]) => job.isExternal
+            );
+
+            if (nextJobsTriggeredAsExternal.length === 0) {
+                return;
+            }
+
+            externalJoinData[joinedPipelineId] = {
+                jobs: Object.fromEntries(nextJobsTriggeredAsExternal),
+                event: joinedPipeline.event
+            };
         }
     });
 
-    return externalPipelineJoinData;
+    return externalJoinData;
 }
 
 /**
@@ -957,5 +970,5 @@ module.exports = {
     getJobId,
     isOrTrigger,
     extractCurrentPipelineJoinData,
-    extractExternalPipelineJoinData
+    extractExternalJoinData
 };
