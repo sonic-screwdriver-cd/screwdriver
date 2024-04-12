@@ -4,7 +4,7 @@ const logger = require('screwdriver-logger');
 const {
     createInternalBuild,
     getParallelBuilds,
-    fillParentBuilds,
+    mergeParentBuilds,
     updateParentBuilds,
     getParentBuildStatus,
     handleNewBuild,
@@ -118,7 +118,7 @@ class AndTrigger {
             }
         }
 
-        fillParentBuilds(parentBuilds, this.currentPipeline, this.currentEvent, finishedBuilds);
+        parentBuilds = mergeParentBuilds(parentBuilds, finishedBuilds, this.currentEvent);
 
         let newBuild;
 

@@ -32,7 +32,7 @@ const {
     extractCurrentPipelineJoinData,
     createExternalEvent,
     getFinishedBuilds,
-    Status
+    buildsToRestartFilter
 } = require('./triggers/helpers');
 const { RemoteJoin } = require('./triggers/remoteJoin');
 
@@ -88,8 +88,7 @@ async function triggerNextJobs(config, app) {
     const currentPipelineNextJobs = extractCurrentPipelineJoinData(pipelineJoinData, currentPipeline.id);
 
     for (const [nextJobName, nextJob] of Object.entries(currentPipelineNextJobs)) {
-        const nextJobId =
-            nextJob.id === undefined ? await getJobId(nextJobName, currentPipeline.id, jobFactory) : nextJob.id;
+        const nextJobId = nextJob.id || (await getJobId(nextJobName, currentPipeline.id, jobFactory));
         const resource = `pipeline:${currentPipeline.id}:event:${currentEvent.id}`;
         let lock;
 
@@ -142,18 +141,12 @@ async function triggerNextJobs(config, app) {
         // This includes CREATED builds too
         const externalFinishedBuilds =
             externalEvent !== undefined ? await getFinishedBuilds(externalEvent, buildFactory) : [];
-        const buildsToRestart = Object.keys(joinedPipeline.jobs)
-            .map(j => {
-                const existingBuild = externalFinishedBuilds.find(b => b.jobId === joinedPipeline.jobs[j].id);
-
-                return existingBuild &&
-                    !Status.isCreated(existingBuild.status) &&
-                    !existingBuild.parentBuildId.includes(currentBuild.id) &&
-                    existingBuild.eventId !== currentEvent.parentEventId
-                    ? existingBuild
-                    : null;
-            })
-            .filter(b => b !== null);
+        const buildsToRestart = buildsToRestartFilter(
+            joinedPipeline,
+            externalFinishedBuilds,
+            currentEvent,
+            currentBuild
+        );
         const isRestart = buildsToRestart.length > 0;
 
         // If user used external trigger syntax, the jobs are triggered as external
@@ -169,7 +162,7 @@ async function triggerNextJobs(config, app) {
         }
 
         // Create a new external event
-        // First downstream trigger, restart, same pipeline trigger as external
+        // First downstream trigger, restart case, same pipeline trigger as external
         if (!externalEvent) {
             const { parentBuilds } = parseJobInfo({
                 currentBuild,
@@ -198,8 +191,7 @@ async function triggerNextJobs(config, app) {
         }
 
         for (const [nextJobName, nextJob] of Object.entries(joinedPipeline.jobs)) {
-            const nextJobId =
-                nextJob.id === undefined ? await getJobId(nextJobName, joinedPipelineId, jobFactory) : nextJob.id;
+            const nextJobId = nextJob.id || (await getJobId(nextJobName, currentPipeline.id, jobFactory));
 
             const { parentBuilds } = parseJobInfo({
                 joinObj: joinedPipeline.jobs,

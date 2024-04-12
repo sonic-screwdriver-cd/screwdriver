@@ -622,52 +622,80 @@ async function getParallelBuilds({ eventFactory, parentEventId, pipelineId }) {
 }
 
 /**
- * Fills parentBuilds object with missing job information
- * @param {Array}  parentBuilds
- * @param {Object} current       Holds current build/event data
- * @param {Array}  builds        Completed builds which is used to fill parentBuilds data
- * @param {Object} [nextEvent]     External event
+ * Merge parentBuilds object with missing job information from latest builds object
+ * @param {Object}  parentBuilds    parent builds { "${pipelineId}": { jobs: { "${jobName}": ${buildId} }, eventId: 123 }  }
+ * @param {Object}  finishedBuilds  Completed builds which is used to fill parentBuilds data
+ * @param {Object}  currentEvent    Current event
+ * @param {Object}  nextEvent       Next triggered event (Remote trigger or Same pipeline event triggered as external)
+ * @returns {Object} Merged parent builds { "${pipelineId}": { jobs: { "${jobName}": ${buildId} }, eventId: 123 }  }
+ *
+ * @example
+ * >>> mergeParentBuilds(...)
+ * {
+ *     "1": {
+ *         jobs: { "job-name-a": 1, "job-name-b": 2 }
+ *         eventId: 123
+ *     },
+ *     "2": {
+ *         jobs: { "job-name-a": 4, "job-name-b": 5 }
+ *         eventId: 456
+ *     },
+ * }
  */
-function fillParentBuilds(parentBuilds, currentPipeline, currentEvent, builds, nextEvent) {
-    Object.keys(parentBuilds).forEach(pid => {
-        Object.keys(parentBuilds[pid].jobs).forEach(jName => {
-            let joinJob;
+function mergeParentBuilds(parentBuilds, finishedBuilds, currentEvent, nextEvent) {
+    const newParentBuilds = {};
 
-            if (parentBuilds[pid].jobs[jName] === null) {
-                let workflowGraph;
-                let searchJob = trimJobName(jName);
+    Object.entries(parentBuilds).forEach(([pipelineId, builds]) => {
+        const newBuilds = {
+            jobs: {},
+            eventId: null
+        };
 
-                // parentBuild is in current event
-                if (+pid === currentPipeline.id) {
-                    workflowGraph = currentEvent.workflowGraph;
-                } else if (nextEvent) {
-                    if (+pid !== nextEvent.pipelineId) {
-                        // parentBuild is remote triggered from external event
-                        searchJob = `sd@${pid}:${searchJob}`;
+        Object.entries(builds.jobs).forEach(([jobName, build]) => {
+            if (build !== null) {
+                newBuilds.jobs[jobName] = build;
+
+                return;
+            }
+
+            let { workflowGraph } = currentEvent;
+            let nodeName = trimJobName(jobName);
+
+            if (strToInt(pipelineId) !== currentEvent.pipelineId) {
+                if (nextEvent) {
+                    if (strToInt(pipelineId) !== nextEvent.pipelineId) {
+                        nodeName = `sd@${pipelineId}:${nodeName}`;
                     }
                     workflowGraph = nextEvent.workflowGraph;
                 } else {
-                    // parentBuild is remote triggered from current Event
-                    searchJob = `sd@${pid}:${searchJob}`;
-                    workflowGraph = currentEvent.workflowGraph;
-                }
-                joinJob = workflowGraph.nodes.find(node => node.name === searchJob);
-
-                if (!joinJob) {
-                    logger.warn(`Job ${jName}:${pid} not found in workflowGraph for event ${currentEvent.id}`);
-                } else {
-                    const targetBuild = builds.find(b => b.jobId === joinJob.id);
-
-                    if (targetBuild) {
-                        parentBuilds[pid].jobs[jName] = targetBuild.id;
-                        parentBuilds[pid].eventId = targetBuild.eventId;
-                    } else {
-                        logger.warn(`Job ${jName}:${pid} not found in builds`);
-                    }
+                    nodeName = `sd@${pipelineId}:${nodeName}`;
                 }
             }
+
+            const targetJob = workflowGraph.nodes.find(node => node.name === nodeName);
+
+            if (!targetJob) {
+                logger.warn(`Job ${jobName}:${pipelineId} not found in workflowGraph for event ${currentEvent.id}`);
+
+                return;
+            }
+
+            const targetBuild = finishedBuilds.find(build => build.jobId === targetJob.id);
+
+            if (!targetBuild) {
+                logger.warn(`Job ${jobName}:${pipelineId} not found in builds`);
+
+                return;
+            }
+
+            newBuilds.jobs[jobName] = targetBuild.id;
+            newBuilds.eventId = targetBuild.eventId;
         });
+
+        newParentBuilds[pipelineId] = newBuilds;
     });
+
+    return newParentBuilds;
 }
 
 /**
@@ -950,12 +978,51 @@ function isOrTrigger(workflowGraph, currentJobName, nextJobName) {
     });
 }
 
+/**
+ *
+ * @param {JoinJobs} joinJobs
+ * @param {Job[]} externalFinishedBuilds
+ * @param {Event} currentEvent
+ * @param {Build} currentBuild
+ */
+function buildsToRestartFilter(joinJobs, externalFinishedBuilds, currentEvent, currentBuild) {
+    return Object.values(joinJobs.jobs)
+        .map(joinJob => {
+            // Next triggered job's build belonging to same event group
+            const existBuild = externalFinishedBuilds.find(build => build.jobId === joinJob.id);
+
+            // If there is no same job's build, then first time trigger
+            if (!existBuild) {
+                return null;
+            }
+
+            // CREATED build is not triggered yet
+            if (Status.isCreated(existBuild.status)) {
+                return null;
+            }
+
+            // Exist build is triggered from current build
+            // Prevent double triggering same build object
+            if (existBuild.parentBuildId.includes(currentBuild.id)) {
+                return null;
+            }
+
+            // Circle back trigger (Remote Join case)
+            if (existBuild.eventId === currentEvent.parentEventId) {
+                return null;
+            }
+
+            return existBuild;
+        })
+        .filter(build => build !== null);
+}
+
 module.exports = {
     Status,
     parseJobInfo,
     createInternalBuild,
     getParallelBuilds,
-    fillParentBuilds,
+    mergeParentBuilds,
     updateParentBuilds,
     getParentBuildStatus,
     handleNewBuild,
@@ -970,5 +1037,6 @@ module.exports = {
     getJobId,
     isOrTrigger,
     extractCurrentPipelineJoinData,
-    extractExternalJoinData
+    extractExternalJoinData,
+    buildsToRestartFilter
 };

@@ -3,7 +3,7 @@
 const {
     createInternalBuild,
     getParallelBuilds,
-    fillParentBuilds,
+    mergeParentBuilds,
     updateParentBuilds,
     getParentBuildIds,
     getParentBuildStatus,
@@ -41,7 +41,7 @@ class RemoteJoin {
         const nextBuild = externalFinishedBuilds.find(b => b.jobId === nextJobId);
         let newBuild;
 
-        fillParentBuilds(parentBuilds, this.currentPipeline, this.currentEvent, externalFinishedBuilds, externalEvent);
+        parentBuilds = mergeParentBuilds(parentBuilds, externalFinishedBuilds, this.currentEvent, externalEvent);
 
         const joinListNames = joinList.map(j => j.name);
 
