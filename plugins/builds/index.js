@@ -206,13 +206,18 @@ async function triggerNextJobs(config, app) {
                 if (isOrTrigger(externalEvent.workflowGraph, remoteTriggerName, nextJobName)) {
                     await remoteTrigger.run(externalEvent, nextJobName, nextJobId, parentBuilds);
                 } else {
+                    // Re get join list when first time remote trigger since external event was empty and cannot get workflow graph then
+                    const joinList = nextJob.join.length > 0
+                        ? nextJob.join
+                        : nextJob.join = workflowParser.getSrcForJoin(externalEvent.workflowGraph, { jobName: nextJobName });
+
                     await remoteJoin.run(
                         externalEvent,
                         nextJobName,
                         nextJobId,
                         parentBuilds,
                         externalFinishedBuilds,
-                        nextJob.join
+                        joinList
                     );
                 }
             } catch (err) {
