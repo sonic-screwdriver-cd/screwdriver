@@ -25,7 +25,6 @@ class RemoteJoin {
         this.scmContext = config.scmContext;
     }
 
-    // async run(externalPipelineId, triggerName, nextJobs, initialExternalEvent) {
     async run(externalEvent, nextJobName, nextJobId, parentBuilds, externalFinishedBuilds, joinList) {
         const externalPipelineId = externalEvent.pipelineId;
         // fetch builds created due to trigger
@@ -41,14 +40,19 @@ class RemoteJoin {
         const nextBuild = externalFinishedBuilds.find(b => b.jobId === nextJobId);
         let newBuild;
 
-        parentBuilds = mergeParentBuilds(parentBuilds, externalFinishedBuilds, this.currentEvent, externalEvent);
+        const newParentBuilds = mergeParentBuilds(
+            parentBuilds,
+            externalFinishedBuilds,
+            this.currentEvent,
+            externalEvent
+        );
 
         const joinListNames = joinList.map(j => j.name);
 
         if (nextBuild) {
             // update current build info in parentBuilds
             newBuild = await updateParentBuilds({
-                joinParentBuilds: parentBuilds,
+                joinParentBuilds: newParentBuilds,
                 nextBuild,
                 build: this.currentBuild
             });
@@ -57,7 +61,7 @@ class RemoteJoin {
             // in the external pipeline's event
             const parentBuildId = getParentBuildIds({
                 currentBuildId: this.currentBuild.id,
-                parentBuilds,
+                parentBuilds: newParentBuilds,
                 joinListNames,
                 pipelineId: externalPipelineId
             });
@@ -72,7 +76,7 @@ class RemoteJoin {
                 scmContext: this.scmContext,
                 event: externalEvent, // this is the parentBuild for the next build
                 baseBranch: externalEvent.baseBranch || null,
-                parentBuilds,
+                parentBuilds: newParentBuilds,
                 parentBuildId,
                 start: false
             });

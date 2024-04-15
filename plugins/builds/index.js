@@ -157,7 +157,6 @@ async function triggerNextJobs(config, app) {
         // no need to lock if there is no external event
         if (externalEvent) {
             resource = `pipeline:${joinedPipelineId}:event:${externalEvent.id}`;
-
             lock = await locker.lock(resource);
         }
 
@@ -207,9 +206,10 @@ async function triggerNextJobs(config, app) {
                     await remoteTrigger.run(externalEvent, nextJobName, nextJobId, parentBuilds);
                 } else {
                     // Re get join list when first time remote trigger since external event was empty and cannot get workflow graph then
-                    const joinList = nextJob.join.length > 0
-                        ? nextJob.join
-                        : workflowParser.getSrcForJoin(externalEvent.workflowGraph, { jobName: nextJobName });
+                    const joinList =
+                        nextJob.join.length > 0
+                            ? nextJob.join
+                            : workflowParser.getSrcForJoin(externalEvent.workflowGraph, { jobName: nextJobName });
 
                     await remoteJoin.run(
                         externalEvent,

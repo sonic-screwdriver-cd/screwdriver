@@ -77,6 +77,23 @@ const Status = {
 };
 
 /**
+ * Converts a string to an integer.
+ * Throws an error if the string is not a valid integer representation.
+ *
+ * @param {string} text The string to be converted to an integer.
+ * @returns {number} The converted integer.
+ * @throws {Error} An error is thrown if the string can't be converted to a finite number.
+ */
+function strToInt(text) {
+    const value = Number.parseInt(text, 10);
+
+    if (Number.isFinite(value)) {
+        return value;
+    }
+    throw new Error(`Failed to cast '${text}' to integer`);
+}
+
+/**
  * Delete a build
  * @method delBuild
  * @param  {Object}  buildConfig  build object to delete
@@ -680,7 +697,7 @@ function mergeParentBuilds(parentBuilds, finishedBuilds, currentEvent, nextEvent
                 return;
             }
 
-            const targetBuild = finishedBuilds.find(build => build.jobId === targetJob.id);
+            const targetBuild = finishedBuilds.find(b => b.jobId === targetJob.id);
 
             if (!targetBuild) {
                 logger.warn(`Job ${jobName}:${pipelineId} not found in builds`);
@@ -881,23 +898,6 @@ function getParentBuildIds({ currentBuildId, parentBuilds, joinListNames, pipeli
 }
 
 /**
- * Converts a string to an integer.
- * Throws an error if the string is not a valid integer representation.
- *
- * @param {string} text The string to be converted to an integer.
- * @returns {number} The converted integer.
- * @throws {Error} An error is thrown if the string can't be converted to a finite number.
- */
-function strToInt(text) {
-    const value = Number.parseInt(text, 10);
-
-    if (Number.isFinite(value)) {
-        return value;
-    }
-    throw new Error(`Failed to cast '${text}' to integer`);
-}
-
-/**
  * Extract a current pipeline's next jobs from pipeline join data
  * (Next jobs triggered as external are not included)
  *
@@ -912,7 +912,7 @@ function extractCurrentPipelineJoinData(joinedPipelines, currentPipelineId) {
         return {};
     }
 
-    return Object.fromEntries(Object.entries(currentPipelineJoinData.jobs).filter(([_, job]) => !job.isExternal));
+    return Object.fromEntries(Object.entries(currentPipelineJoinData.jobs).filter(entry => !entry[1].isExternal));
 }
 
 /**
@@ -932,7 +932,7 @@ function extractExternalJoinData(joinedPipelines, currentPipelineId) {
             externalJoinData[joinedPipelineId] = joinedPipeline;
         } else {
             const nextJobsTriggeredAsExternal = Object.entries(joinedPipeline.jobs).filter(
-                ([_, job]) => job.isExternal
+                entry => entry[1].isExternal
             );
 
             if (nextJobsTriggeredAsExternal.length === 0) {
@@ -992,25 +992,17 @@ function buildsToRestartFilter(joinJobs, externalFinishedBuilds, currentEvent, c
             const existBuild = externalFinishedBuilds.find(build => build.jobId === joinJob.id);
 
             // If there is no same job's build, then first time trigger
-            if (!existBuild) {
-                return null;
-            }
+            if (!existBuild) return null;
 
             // CREATED build is not triggered yet
-            if (Status.isCreated(existBuild.status)) {
-                return null;
-            }
+            if (Status.isCreated(existBuild.status)) return null;
 
             // Exist build is triggered from current build
             // Prevent double triggering same build object
-            if (existBuild.parentBuildId.includes(currentBuild.id)) {
-                return null;
-            }
+            if (existBuild.parentBuildId.includes(currentBuild.id)) return null;
 
             // Circle back trigger (Remote Join case)
-            if (existBuild.eventId === currentEvent.parentEventId) {
-                return null;
-            }
+            if (existBuild.eventId === currentEvent.parentEventId) return null;
 
             return existBuild;
         })
