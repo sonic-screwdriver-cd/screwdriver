@@ -912,7 +912,7 @@ function extractCurrentPipelineJoinData(joinedPipelines, currentPipelineId) {
         return {};
     }
 
-    return Object.fromEntries(Object.entries(currentPipelineJoinData.jobs).filter(entry => !entry[1].isExternal));
+    return Object.fromEntries(Object.entries(currentPipelineJoinData.jobs).filter(([, join]) => !join.isExternal));
 }
 
 /**
@@ -932,7 +932,7 @@ function extractExternalJoinData(joinedPipelines, currentPipelineId) {
             externalJoinData[joinedPipelineId] = joinedPipeline;
         } else {
             const nextJobsTriggeredAsExternal = Object.entries(joinedPipeline.jobs).filter(
-                entry => entry[1].isExternal
+                ([, join]) => join.isExternal
             );
 
             if (nextJobsTriggeredAsExternal.length === 0) {
