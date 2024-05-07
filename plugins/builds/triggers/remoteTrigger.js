@@ -17,7 +17,7 @@ const { OrBase } = require('./orBase');
  * @property {number} username
  * @property {string} scmContext
  */
-class OrTrigger extends OrBase {
+class RemoteTrigger extends OrBase {
     /**
      * Trigger the next jobs of the current job
      * @param {EventModel} event
@@ -33,5 +33,5 @@ class OrTrigger extends OrBase {
 }
 
 module.exports = {
-    OrTrigger
+    RemoteTrigger
 };

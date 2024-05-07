@@ -19,6 +19,7 @@ const metricsRoute = require('./metrics');
 const locker = require('../lock');
 const { OrTrigger } = require('./triggers/or');
 const { AndTrigger } = require('./triggers/and');
+const { RemoteTrigger } = require('./triggers/remoteTrigger');
 const { RemoteJoin } = require('./triggers/remoteJoin');
 const {
     strToInt,
@@ -121,6 +122,7 @@ async function triggerNextJobs(config, app) {
 
     // Trigger RemoteJoin and RemoteTrigger for current and external pipeline jobs.
     // Helper function to handle triggering jobs in external pipeline
+    const remoteTrigger = new RemoteTrigger(app, config);
     const remoteJoin = new RemoteJoin(app, config, currentEvent);
     const externalPipelineJoinData = extractExternalJoinData(pipelineJoinData, currentPipeline.id);
 
@@ -193,7 +195,13 @@ async function triggerNextJobs(config, app) {
 
             try {
                 if (isOrTrigger(externalEvent.workflowGraph, remoteTriggerName, nextJobName)) {
-                    await OrTrigger.run(externalEvent, externalEvent.pipelineId, nextJobName, nextJobId, parentBuilds);
+                    await remoteTrigger.run(
+                        externalEvent,
+                        externalEvent.pipelineId,
+                        nextJobName,
+                        nextJobId,
+                        parentBuilds
+                    );
                 } else {
                     // Re get join list when first time remote trigger since external event was empty and cannot get workflow graph then
                     const joinList =
