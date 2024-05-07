@@ -38,7 +38,8 @@ class JoinBase {
     }
 
     /**
-     * aaa
+     * Create a build if the next build does not exist.
+     * If the next build exists, trigger it if the conditions for triggering are met.
      * @param  {number} pipelineId
      * @param  {EventModel} event
      * @param  {BuildModel} nextBuild
