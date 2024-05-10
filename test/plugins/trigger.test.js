@@ -2644,6 +2644,28 @@ describe('trigger tests', () => {
         assert.equal(event.getBuildOf('PR-1:target').status, 'RUNNING');
     });
 
+    it('[ ~sd@1:a ] is not triggered in PR build when chainPR enabled', async () => {
+        const upstreamPipeline = await pipelineFactoryMock.createFromFile('~sd@1:a-PR-upstream.yaml');
+        upstreamPipeline.addPRJobs(1);
+        upstreamPipeline.chainPR = true;
+
+        const downstreamPipeline = await pipelineFactoryMock.createFromFile('~sd@1:a-PR-downstream.yaml');
+        downstreamPipeline.addPRJobs(1);
+        downstreamPipeline.chainPR = true;
+
+        const upstreamEvent = await eventFactoryMock.create({
+            pipelineId: upstreamPipeline.id,
+            startFrom: '~pr',
+            pr: { ref: 'PR1' }
+        });
+
+        await upstreamEvent.getBuildOf('PR-1:a').complete('SUCCESS');
+
+        assert.isNull(downstreamPipeline.getLatestEvent());
+        assert.equal(downstreamPipeline.getBuildsOf('target').length, 0);
+        assert.equal(downstreamPipeline.getBuildsOf('PR-1:target').length, 0);
+    });
+
     it('stage setup is triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('stage.yaml');
 
