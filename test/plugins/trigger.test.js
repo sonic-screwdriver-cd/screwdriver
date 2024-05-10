@@ -2542,6 +2542,7 @@ describe('trigger tests', () => {
 
     it('[ ~pr ] is triggered', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~pr.yaml');
+
         pipeline.addPRJobs(1);
 
         const event = await eventFactoryMock.create({
@@ -2559,6 +2560,7 @@ describe('trigger tests', () => {
 
     it('[ ~a ] is not triggered when chainPR disabled', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a-pr.yaml');
+
         pipeline.addPRJobs(1);
         pipeline.chainPR = false;
 
@@ -2574,6 +2576,7 @@ describe('trigger tests', () => {
 
     it('[ ~a ] is triggered when chainPR enabled', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('~a-PR.yaml');
+
         pipeline.addPRJobs(1);
         pipeline.chainPR = true;
 
@@ -2590,6 +2593,7 @@ describe('trigger tests', () => {
 
     it('[ a, b ] is triggered when chainPR enabled', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b-PR.yaml');
+
         pipeline.addPRJobs(1);
         pipeline.chainPR = true;
 
@@ -2610,6 +2614,7 @@ describe('trigger tests', () => {
 
     it('[ a, b ] is not triggered when chainPR disabled', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('a_b-PR.yaml');
+
         pipeline.addPRJobs(1);
         pipeline.chainPR = false;
 
@@ -2627,6 +2632,7 @@ describe('trigger tests', () => {
 
     it('[ d ] is triggered when chainPR enabled', async () => {
         const pipeline = await pipelineFactoryMock.createFromFile('d-PR.yaml');
+
         pipeline.addPRJobs(1);
         pipeline.chainPR = true;
 
@@ -2646,10 +2652,12 @@ describe('trigger tests', () => {
 
     it('[ ~sd@1:a ] is not triggered in PR build when chainPR enabled', async () => {
         const upstreamPipeline = await pipelineFactoryMock.createFromFile('~sd@1:a-PR-upstream.yaml');
+
         upstreamPipeline.addPRJobs(1);
         upstreamPipeline.chainPR = true;
 
         const downstreamPipeline = await pipelineFactoryMock.createFromFile('~sd@1:a-PR-downstream.yaml');
+
         downstreamPipeline.addPRJobs(1);
         downstreamPipeline.chainPR = true;
 

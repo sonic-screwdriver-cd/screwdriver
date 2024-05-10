@@ -249,7 +249,7 @@ class PipelineFactoryMock {
                     });
                 }
             });
-        }
+        };
 
         this.records.push(pipeline);
 
@@ -400,7 +400,7 @@ class EventFactoryMock {
                         }
                     });
                 }
-            })
+            });
         }
 
         if (config.startFrom && !config.skipMessage) {
@@ -749,8 +749,9 @@ class JobFactoryMock {
 
             if (type === 'pr') return match[0];
             if (type === 'job') return match[1];
-            assert.fail(`Invalid argument: job.parsePRJobName(${type})`);
-        }
+
+            return assert.fail(`Invalid argument: job.parsePRJobName(${type})`);
+        };
 
         return job;
     }
