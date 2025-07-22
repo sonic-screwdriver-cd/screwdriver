@@ -7,7 +7,7 @@ const { PR_JOB_NAME, PR_STAGE_NAME, STAGE_TEARDOWN_PATTERN } = require('screwdri
 const { getFullStageJobName } = require('../../helper');
 const { updateVirtualBuildSuccess } = require('../triggers/helpers');
 const TERMINAL_STATUSES = ['FAILURE', 'ABORTED', 'UNSTABLE', 'COLLAPSED'];
-const FINISHED_STATUSES = ['FAILURE', 'SUCCESS', 'ABORTED', 'UNSTABLE', 'COLLAPSED'];
+const FINISHED_STATUSES = ['SUCCESS', 'FAILURE', 'ABORTED', 'UNSTABLE', 'COLLAPSED'];
 
 /**
  * @typedef {import('screwdriver-models/lib/build')} Build
@@ -336,8 +336,18 @@ async function updateBuildAndTriggerDownstreamJobs(config, build, server, userna
             eventId: newEvent.id
         });
 
-        if (stageBuild.status !== newBuild.status) {
-            if (!TERMINAL_STATUSES.includes(stageBuild.status)) {
+        // Not update if stageBuild.status is terminated
+        if (stageBuild.status !== newBuild.status && !TERMINAL_STATUSES.includes(stageBuild.status)) {
+            console.log('DEBUG', newBuild.status, job.name);
+            // Update stageBuild.status
+            //   when non-teardown build - to 'RUNNING'
+            //   when build was terminated - to 'FAILURE', 'ABORTED', 'UNSTABLE' or 'COLLAPSED'
+            //   when teardown build - to 'SUCCESS', 'FAILURE', 'ABORTED', 'UNSTABLE' or 'COLLAPSED'
+            if (
+                (!isStageTeardown && newBuild.status === 'RUNNING') ||
+                (!isStageTeardown && TERMINAL_STATUSES.includes(newBuild.status)) ||
+                (isStageTeardown && FINISHED_STATUSES.includes(newBuild.status))
+            ) {
                 stageBuild.status = newBuild.status;
                 await stageBuild.update();
             }
