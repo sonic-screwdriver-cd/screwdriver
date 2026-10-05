@@ -8,6 +8,66 @@ const { startHookEvent } = require('./helper');
 const dedupStore = require('./dedupStore');
 
 const DEFAULT_MAX_BYTES = 1048576; // 1MB
+
+/**
+ * Sanitize an untrusted webhook value before including it in structured logs.
+ * @param  {*}      value     Candidate value
+ * @param  {Number} maxLength Maximum output length
+ * @returns {String|undefined} Sanitized value
+ */
+function sanitizeWebhookLogValue(value, maxLength = 256) {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    return (
+        Array.from(value)
+            .filter(char => {
+                const codePoint = char.codePointAt(0);
+
+                return codePoint > 0x1f && codePoint !== 0x7f;
+            })
+            .join('')
+            .slice(0, maxLength) || undefined
+    );
+}
+
+/**
+ * Build safe correlation fields without logging the payload or signature.
+ * Repository is explicitly unverified until the SCM plugin validates the hook.
+ * @param  {Object} request Hapi request
+ * @param  {String} payload Raw webhook payload
+ * @returns {Object} Safe structured log context
+ */
+function getWebhookLogContext(request, payload) {
+    const { headers } = request;
+    const context = {
+        requestId: request.info.id,
+        deliveryId: sanitizeWebhookLogValue(
+            headers['x-github-delivery'] || headers['x-gitlab-event-uuid'] || headers['x-request-uuid'],
+            128
+        ),
+        event: sanitizeWebhookLogValue(
+            headers['x-github-event'] || headers['x-gitlab-event'] || headers['x-event-key'],
+            128
+        )
+    };
+
+    try {
+        const parsedPayload = JSON.parse(payload);
+
+        context.action = sanitizeWebhookLogValue(parsedPayload.action, 128);
+        context.unverifiedRepository = sanitizeWebhookLogValue(
+            parsedPayload.repository && parsedPayload.repository.full_name
+                ? parsedPayload.repository.full_name
+                : parsedPayload.project && parsedPayload.project.path_with_namespace
+        );
+    } catch (err) {
+        // The SCM plugin classifies invalid payloads. Never include the raw payload here.
+    }
+
+    return context;
+}
 const providerSchema = joi
     .object({
         username: joi.string().required(),
@@ -69,6 +129,7 @@ const webhooksPlugin = {
                     const { executor, queueWebhookEnabled } = queueWebhook;
                     const message = 'Unable to process this kind of event';
                     let hookId;
+                    let webhookLogContext = getWebhookLogContext(request);
 
                     try {
                         const chunks = [];
@@ -78,6 +139,8 @@ const webhooksPlugin = {
                         }
 
                         const data = Buffer.concat(chunks).toString();
+
+                        webhookLogContext = getWebhookLogContext(request, data);
                         const parsed = await scm.parseHook(request.headers, data);
 
                         if (!parsed) {
@@ -97,6 +160,14 @@ const webhooksPlugin = {
                         const { type } = parsed;
 
                         hookId = parsed.hookId;
+                        webhookLogContext = {
+                            ...webhookLogContext,
+                            hookId,
+                            scmContext: parsed.scmContext,
+                            eventType: type,
+                            repository: webhookLogContext.unverifiedRepository
+                        };
+                        delete webhookLogContext.unverifiedRepository;
 
                         request.log(['webhook', hookId], `Received event type ${type}`);
 
@@ -131,7 +202,12 @@ const webhooksPlugin = {
 
                         return await startHookEvent(request, h, parsed);
                     } catch (err) {
-                        logger.error(`[${hookId}]: ${err}`);
+                        logger.error('Failed to process webhook', {
+                            reasonCode: err.reasonCode || 'WEBHOOK_PROCESSING_ERROR',
+                            statusCode: err.statusCode,
+                            errorName: err.name,
+                            ...webhookLogContext
+                        });
 
                         if (err instanceof ValidationError) {
                             throw boom.badData(err);

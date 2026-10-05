@@ -20,6 +20,7 @@ describe('webhooks plugin test', () => {
     let queueWebhookMock;
     let startHookEventMock;
     let dedupStoreMock;
+    let loggerMock;
     let plugin;
     let server;
     const apiUri = 'http://foo.bar:12345';
@@ -47,8 +48,14 @@ describe('webhooks plugin test', () => {
         dedupStoreMock = {
             claim: sinon.stub().resolves(true)
         };
+        loggerMock = {
+            info: sinon.stub(),
+            warn: sinon.stub(),
+            error: sinon.stub()
+        };
 
         plugin = rewiremock.proxy('../../plugins/webhooks', {
+            'screwdriver-logger': loggerMock,
             '../../plugins/webhooks/helper': {
                 startHookEvent: startHookEventMock
             },
@@ -250,11 +257,45 @@ describe('webhooks plugin test', () => {
             });
         });
 
-        it('returns 500 when something went wrong with parseHook', () => {
-            pipelineFactoryMock.scm.parseHook.rejects(new Error('Invalid x-hub-signature'));
+        it('logs safe correlation fields when parseHook rejects a webhook', () => {
+            const err = new Error('Cannot parse this webhook');
+
+            err.statusCode = 400;
+            err.reasonCode = 'SCM_ROUTER_NO_MATCH';
+            options.payload = {
+                action: 'opened\n',
+                repository: {
+                    full_name: 'org/repo\n'
+                },
+                secret: 'must-not-be-logged'
+            };
+            pipelineFactoryMock.scm.parseHook.rejects(err);
+
+            return server.inject(options).then(reply => {
+                assert.equal(reply.statusCode, 400);
+                assert.calledWithMatch(loggerMock.error, 'Failed to process webhook', {
+                    reasonCode: 'SCM_ROUTER_NO_MATCH',
+                    statusCode: 400,
+                    deliveryId: parsed.hookId,
+                    event: 'push',
+                    action: 'opened',
+                    unverifiedRepository: 'org/repo'
+                });
+                assert.isString(loggerMock.error.lastCall.args[1].requestId);
+                assert.notMatch(JSON.stringify(loggerMock.error.lastCall.args), /must-not-be-logged/);
+            });
+        });
+
+        it('returns 500 when parseHook rejects without a status code', () => {
+            pipelineFactoryMock.scm.parseHook.rejects(new Error('Unexpected parse error'));
 
             return server.inject(options).then(reply => {
                 assert.equal(reply.statusCode, 500);
+                assert.calledWithMatch(loggerMock.error, 'Failed to process webhook', {
+                    reasonCode: 'WEBHOOK_PROCESSING_ERROR',
+                    deliveryId: parsed.hookId,
+                    event: 'push'
+                });
             });
         });
 
