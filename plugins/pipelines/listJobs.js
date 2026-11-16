@@ -27,7 +27,7 @@ module.exports = () => ({
 
         handler: async (request, h) => {
             const { pipelineFactory } = request.server.app;
-            const { page, count, jobName, type } = request.query;
+            const { page, count, jobName, type, sort } = request.query;
 
             return pipelineFactory
                 .get(request.params.id)
@@ -39,7 +39,8 @@ module.exports = () => ({
                     const config = {
                         params: {
                             archived: request.query.archived
-                        }
+                        },
+                        sort
                     };
 
                     if (type) {

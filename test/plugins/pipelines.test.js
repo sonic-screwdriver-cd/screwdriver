@@ -1902,7 +1902,8 @@ describe('pipeline plugin test', () => {
                 assert.calledWith(pipelineMock.getJobs, {
                     params: {
                         archived: false
-                    }
+                    },
+                    sort: 'descending'
                 });
                 assert.deepEqual(reply.result, testJobs);
             }));
@@ -1916,7 +1917,8 @@ describe('pipeline plugin test', () => {
                     params: {
                         archived: false,
                         name: 'deploy'
-                    }
+                    },
+                    sort: 'descending'
                 });
                 assert.deepEqual(reply.result, testJobs);
             });
@@ -1931,6 +1933,7 @@ describe('pipeline plugin test', () => {
                     params: {
                         archived: false
                     },
+                    sort: 'descending',
                     search: { field: 'name', keyword: 'PR-%:%' }
                 });
                 assert.deepEqual(reply.result, testJobs);
@@ -1946,10 +1949,35 @@ describe('pipeline plugin test', () => {
                     params: {
                         archived: false
                     },
+                    sort: 'descending',
                     search: { field: 'name', keyword: 'PR-%:%', inverse: true }
                 });
                 assert.deepEqual(reply.result, testJobs);
             });
+        });
+
+        it('paginates PR jobs in ascending ID order when requested', async () => {
+            options.url = `/pipelines/${id}/jobs?type=pr&page=2&count=50&sort=ascending`;
+
+            const reply = await server.inject(options);
+
+            assert.equal(reply.statusCode, 200);
+            assert.calledWith(pipelineMock.getJobs, {
+                params: { archived: false },
+                sort: 'ascending',
+                search: { field: 'name', keyword: 'PR-%:%' },
+                paginate: { page: 2, count: 50 }
+            });
+            assert.deepEqual(reply.result, testJobs);
+        });
+
+        it('rejects a page larger than the API limit', async () => {
+            options.url = `/pipelines/${id}/jobs?page=1&count=51`;
+
+            const reply = await server.inject(options);
+
+            assert.equal(reply.statusCode, 400);
+            assert.notCalled(pipelineMock.getJobs);
         });
 
         it('returns 400 for wrong query format', () => {
@@ -1985,6 +2013,7 @@ describe('pipeline plugin test', () => {
                     params: {
                         archived: true
                     },
+                    sort: 'descending',
                     paginate: {
                         count: 30,
                         page: 2
